@@ -17,7 +17,7 @@ export default function Home() {
         <div className="hidden lg:block flex-1 min-w-0" aria-hidden />
         <div className="flex flex-col justify-center space-y-8 flex-shrink-0 w-full max-w-2xl mx-auto lg:px-4">
       <header className="text-center space-y-4">
-        <h1 className="text-3xl sm:text-4xl font-bold text-white drop-shadow-lg">
+        <h1 className="text-5xl sm:text-6xl md:text-7xl font-normal text-white drop-shadow-lg tracking-tight" style={{ fontFamily: "'Pacifico', cursive" }}>
           Zino and Sam Prestianni
         </h1>
         <p className="text-xl text-white font-semibold drop-shadow-md">

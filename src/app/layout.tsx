@@ -15,6 +15,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body className="min-h-screen bg-slate-50 antialiased">
         <Navigation />
         <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
