@@ -80,11 +80,38 @@ To use your own domain (e.g. `mundabiddi.yourname.com`):
 
 ## Troubleshooting
 
-**Build fails?**  
+### 404 NOT_FOUND when opening the app
+
+If deployments show "Ready" but the URL returns 404:
+
+1. **Get the exact URL from Vercel**
+   - Open your project: [vercel.com/dashboard](https://vercel.com/dashboard)
+   - Click the **munda-biddi-app** project
+   - Click a deployment that shows "Ready"
+   - Click **Visit** – that URL is the one that works
+   - Or go to **Settings → Domains** to see the production domain
+
+2. **Check Deployment Protection**
+   - Go to **Settings → Deployment Protection**
+   - If "Vercel Authentication" or "Password Protection" is on, visitors must log in
+   - For a public app: turn protection **Off** for Production
+
+3. **Check Root Directory**
+   - Go to **Settings → General**
+   - **Root Directory** must be `.` (or empty) if the repo root is the Next.js app
+   - If your repo has the app in a subfolder (e.g. `new-project`), set Root Directory to that folder
+
+4. **Check Output Directory**
+   - For Next.js, leave Output Directory **empty** (Vercel auto-detects)
+   - Do not set it to `out` unless you use `next export` (static export)
+
+### Build fails?
+
 - Check the build logs in Vercel  
 - Ensure `npm run build` works locally
 
-**Need to update the app?**  
+### Need to update the app?
+
 - Make changes locally, then run:
   ```bash
   git add .
