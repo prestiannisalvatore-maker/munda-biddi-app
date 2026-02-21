@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Munda Biddi Trail</name>
+    <Placemark>
+      <name>Munda Biddi Trail</name>
+      <LineString>
+        <coordinates>116.1636,-32.0949 116.1733,-32.3019 116.0087,-32.5310 116.1065,-32.8622 116.0234,-33.1481 115.9260,-33.4107 115.6674,-33.7962 115.9527,-34.2325 116.4669,-34.7126 116.7554,-34.8685 116.9417,-34.8452 117.2645,-34.9020</coordinates>
+      </LineString>
+    </Placemark>
+  </Document>
+</kml>
