@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
+import { format, parseISO } from "date-fns";
 import { useTrip } from "@/context/TripContext";
 import {
   AUSTRALIND_COMPANION_URL,
@@ -33,7 +34,7 @@ export default function AustralindTripPage() {
         </p>
         <p className="text-sm text-slate-500">
           {australindMeta.riders.join(" & ")} · ~{australindMeta.totalKm} km ·{" "}
-          {australindMeta.ridingDays} riding days
+          {australindMeta.ridingDays} days
         </p>
         <a
           href={AUSTRALIND_COMPANION_URL}
@@ -41,7 +42,7 @@ export default function AustralindTripPage() {
           rel="noreferrer"
           className="inline-flex items-center rounded-xl bg-emerald-700 px-5 py-3 text-white font-semibold shadow-sm hover:bg-emerald-800"
         >
-          Open live companion (GPS, family, packing)
+          Open GPS companion (tracking only)
         </a>
       </header>
 
@@ -52,7 +53,7 @@ export default function AustralindTripPage() {
         >
           <h2 className="font-semibold text-slate-800">Schedule</h2>
           <p className="mt-1 text-sm text-slate-600">
-            Five trail days with times and overnight stops
+            Five days with times and overnight stops
           </p>
         </Link>
         <Link
@@ -76,92 +77,93 @@ export default function AustralindTripPage() {
       <section className="space-y-4">
         <h2 className="text-xl font-semibold text-slate-800">Itinerary</h2>
         <p className="text-sm text-slate-600">
-          One day per date, 21–25 Sep 2026. Train transfers sit on Monday
-          morning and Friday evening, not as extra days.
+          Five calendar days. Friday 25 September is one day: ride to Mandurah,
+          then the train home that evening.
         </p>
         <div className="space-y-4">
-          {australindLegs.map((leg) => (
-            <article
-              key={leg.id}
-              className={`rounded-xl border bg-white shadow-sm overflow-hidden ${
-                leg.amber ? "border-amber-300" : "border-slate-200"
-              }`}
-            >
-              <div className="px-5 py-4 border-b border-slate-100 bg-slate-50">
-                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
-                  {leg.section}
-                </p>
-                <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                  <h3 className="font-[inherit] text-lg font-semibold text-slate-800">
-                    {leg.label}
+          {australindLegs.map((leg) => {
+            const dayGates = australindLogistics.filter(
+              (gate) => gate.dayId === leg.id
+            );
+            return (
+              <article
+                key={leg.date}
+                className={`rounded-xl border bg-white shadow-sm overflow-hidden ${
+                  leg.amber ? "border-amber-300" : "border-slate-200"
+                }`}
+              >
+                <div className="px-5 py-4 border-b border-slate-100 bg-slate-50">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+                    {leg.section}
+                  </p>
+                  <h3 className="mt-1 text-xl font-semibold text-slate-800">
+                    {format(parseISO(leg.date), "EEEE d MMMM yyyy")}
                   </h3>
-                  <span className="text-sm text-slate-500">
-                    {leg.dayOfWeek} {leg.date}
-                  </span>
-                  <span className="text-sm font-medium text-emerald-700">
-                    {leg.distanceKm} km
-                  </span>
-                  {leg.amber && (
-                    <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
-                      Amber day
+                  <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <span className="font-medium text-slate-800">
+                      {leg.label}
                     </span>
+                    <span className="text-sm font-medium text-emerald-700">
+                      {leg.distanceKm} km riding
+                    </span>
+                    {leg.amber && (
+                      <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                        Amber day
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="px-5 py-4 space-y-2 text-sm text-slate-700">
+                  <p>{leg.route}</p>
+                  {leg.logistics && leg.logistics.length > 0 && (
+                    <ul className="list-disc pl-5 text-slate-600 space-y-1">
+                      {leg.logistics.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  )}
+                  <p className="text-slate-600">{leg.highlight}</p>
+                  <p>
+                    <span className="font-medium">Overnight:</span>{" "}
+                    {leg.endType === "hut" || leg.overnight === "camp"
+                      ? leg.camping !== "n/a"
+                        ? leg.camping
+                        : leg.end
+                      : leg.motel !== "n/a"
+                        ? leg.motel
+                        : leg.end}
+                  </p>
+                  <p className="text-slate-600">{leg.notes}</p>
+                  {dayGates.length > 0 && (
+                    <div className="mt-3 rounded-lg bg-slate-50 p-3 space-y-2">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Same day — prep
+                      </p>
+                      {dayGates.map((gate) => (
+                        <p key={gate.id} className="text-slate-600">
+                          <span className="font-medium text-slate-800">
+                            {gate.title}.
+                          </span>{" "}
+                          {gate.detail}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                  {leg.googleMapsDirections && (
+                    <a
+                      href={leg.googleMapsDirections}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-block text-emerald-700 font-medium hover:underline"
+                    >
+                      Directions
+                    </a>
                   )}
                 </div>
-              </div>
-              <div className="px-5 py-4 space-y-2 text-sm text-slate-700">
-                <p>{leg.route}</p>
-                {leg.logistics && leg.logistics.length > 0 && (
-                  <ul className="list-disc pl-5 text-slate-600 space-y-1">
-                    {leg.logistics.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
-                )}
-                <p className="text-slate-600">{leg.highlight}</p>
-                <p>
-                  <span className="font-medium">Overnight:</span>{" "}
-                  {leg.endType === "hut" || leg.overnight === "camp"
-                    ? leg.camping !== "n/a"
-                      ? leg.camping
-                      : leg.end
-                    : leg.motel !== "n/a"
-                      ? leg.motel
-                      : leg.end}
-                </p>
-                <p className="text-slate-600">{leg.notes}</p>
-                {leg.googleMapsDirections && (
-                  <a
-                    href={leg.googleMapsDirections}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-block text-emerald-700 font-medium hover:underline"
-                  >
-                    Directions
-                  </a>
-                )}
-              </div>
-            </article>
-          ))}
+              </article>
+            );
+          })}
         </div>
-      </section>
-
-      <section className="space-y-4">
-        <h2 className="text-xl font-semibold text-slate-800">Logistics gates</h2>
-        <ul className="space-y-3">
-          {australindLogistics.map((gate) => (
-            <li
-              key={gate.id}
-              className="rounded-xl border border-slate-200 bg-white p-4"
-            >
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                {gate.critical ? "Critical · " : ""}
-                {gate.kind}
-              </p>
-              <p className="mt-1 font-medium text-slate-800">{gate.title}</p>
-              <p className="mt-1 text-sm text-slate-600">{gate.detail}</p>
-            </li>
-          ))}
-        </ul>
       </section>
 
       <section className="rounded-xl bg-slate-100 p-6 space-y-3">

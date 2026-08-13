@@ -51,7 +51,7 @@ export const accommodationSuggestions: Record<string, string[]> = {
     "Black Diamond Lodge — bike-friendly bed and resupply",
     "Collie hotels and motels",
   ],
-  "Home (Mandurah line)": ["Transperth Mandurah line to Perth"],
+  "Home": ["Transperth Mandurah line to Perth the same evening"],
   "Donnybrook": ["Donnybrook hotels", "B&Bs", "Caravan parks"],
   "Donnelly River Village": ["Donnelly River Village accommodation", "Holiday village"],
   "Nannup": ["Nannup hotels", "B&Bs", "Forest Lodge"],
