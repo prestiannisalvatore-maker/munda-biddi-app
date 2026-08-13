@@ -27,6 +27,8 @@ export interface AustralindLeg {
   notes: string;
   logistics?: string[];
   googleMapsDirections?: string;
+  overnightKind: "camp" | "motel" | "home";
+  bookingStatus: "pending" | "skip" | "booked";
 }
 
 export const australindMeta = {
@@ -52,7 +54,7 @@ export const australindLegs: AustralindLeg[] = [
     distanceKm: 32.11,
     cumulativeKm: 32.11,
     isRest: false,
-    section: "Day 1",
+    section: "DAY 1 · ONTO THE TRAIL",
     end: "Nglang Boodja Hut",
     endType: "hut",
     terrain: "Road connector + Ferguson Valley climb onto Munda Biddi",
@@ -65,6 +67,8 @@ export const australindLegs: AustralindLeg[] = [
     lat: -33.4108324397821,
     lon: 115.9255357703952,
     overnight: "camp",
+    overnightKind: "camp",
+    bookingStatus: "pending",
     notes:
       "Leave town on the Preston River path (not straight through). Ferguson Rd from Dardanup joins the Munda Biddi. First trail overnight.",
     logistics: [
@@ -84,7 +88,7 @@ export const australindLegs: AustralindLeg[] = [
     distanceKm: 36.56,
     cumulativeKm: 68.67,
     isRest: false,
-    section: "Day 2",
+    section: "DAY 2 · INTO COLLIE",
     end: "Black Diamond Lodge, Collie",
     endType: "town",
     terrain: "Munda Biddi fire road / rail trail / singletrack",
@@ -96,6 +100,8 @@ export const australindLegs: AustralindLeg[] = [
     lat: -33.3583550001494,
     lon: 116.14731799994844,
     overnight: "motel",
+    overnightKind: "motel",
+    bookingStatus: "pending",
     notes: "Book Black Diamond Lodge ahead and confirm bike storage.",
   },
   {
@@ -107,7 +113,7 @@ export const australindLegs: AustralindLeg[] = [
     distanceKm: 89.71,
     cumulativeKm: 158.38,
     isRest: false,
-    section: "Day 3",
+    section: "DAY 3 · LONG QUIET STRETCH",
     end: "Brockman Lake Park (bush camp)",
     endType: "hut",
     terrain: "Long quiet Munda Biddi stretch + optional sealed shortcuts",
@@ -119,6 +125,8 @@ export const australindLegs: AustralindLeg[] = [
     lat: -32.998046009393875,
     lon: 115.96937572422394,
     overnight: "camp",
+    overnightKind: "camp",
+    bookingStatus: "skip",
     notes:
       "Leave Collie full. Pack dinner and breakfast for the bush camp. Strong lights if dusk catches you. Optional sealed shortcuts if needed.",
   },
@@ -131,7 +139,7 @@ export const australindLegs: AustralindLeg[] = [
     distanceKm: 56.5,
     cumulativeKm: 214.88,
     isRest: false,
-    section: "Day 4",
+    section: "DAY 4 · TO DWELLINGUP",
     end: "Caravan park huts, Dwellingup",
     endType: "town",
     terrain: "Munda Biddi via Bidjar Ngoulin",
@@ -143,19 +151,21 @@ export const australindLegs: AustralindLeg[] = [
     lat: -32.71447961875299,
     lon: 116.06196329610634,
     overnight: "motel",
+    overnightKind: "motel",
+    bookingStatus: "pending",
     notes: "Confirm hut/cabin booking and late-arrival options in Dwellingup.",
   },
   {
     id: 5,
     date: "2026-09-25",
     dayOfWeek: "Friday",
-    label: "Dwellingup to Mandurah, then train home",
+    label: "Dwellingup to Mandurah",
     route:
-      "Dwellingup → North Spur Rd → Pinjarra → Paterson Rd → Mandurah Station → Perth (Mandurah line)",
+      "Dwellingup → North Spur Rd → Pinjarra → Paterson Rd → Mandurah Station, then Mandurah line to Perth",
     distanceKm: 44.3,
     cumulativeKm: 259.18,
     isRest: false,
-    section: "Day 5",
+    section: "DAY 5 · OFF THE SCARP · TRAIN HOME",
     end: "Home",
     endType: "town",
     terrain:
@@ -163,14 +173,16 @@ export const australindLegs: AustralindLeg[] = [
     camping: "n/a",
     motel: "Home",
     highlight:
-      "Late-morning start. North Spur Rd downhill off the escarpment, lunch in Pinjarra, then the Mandurah line to Perth.",
+      "Late-morning start. North Spur Rd downhill off the escarpment, lunch in Pinjarra, then the Mandurah line to Perth the same evening.",
     amber: false,
     weatherPlace: "Mandurah",
     lat: -32.5361164,
     lon: 115.7424809,
     overnight: "motel",
+    overnightKind: "home",
+    bookingStatus: "skip",
     notes:
-      "One Friday: ride off the scarp, then train home the same evening. Check bike-on-train rules and the Friday timetable.",
+      "One Friday: ride off the scarp, then train home that evening. Check bike-on-train rules and the Friday timetable.",
     googleMapsDirections: "https://maps.app.goo.gl/PrG9Fe9Wm5dm3H2cA",
   },
 ];

@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const navItems = [
   { href: "/", label: "Home" },
   { href: "/australind", label: "Australind Trip" },
+  { href: "/itinerary", label: "Days" },
   { href: "/map", label: "Trail Map" },
   { href: "/info", label: "Trail Info" },
   { href: "/distance-calculator", label: "Distance Calculator" },
@@ -31,7 +32,9 @@ export default function Navigation() {
           </Link>
           <div className="flex gap-1 overflow-x-auto py-2 scrollbar-hide">
             {navItems.map((item) => {
-              const isActive = pathname === item.href;
+              const isActive =
+                pathname === item.href ||
+                (item.href === "/itinerary" && pathname === "/australind");
               return (
                 <Link
                   key={item.href}
