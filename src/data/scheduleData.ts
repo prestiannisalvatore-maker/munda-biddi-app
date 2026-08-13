@@ -40,8 +40,18 @@ export const defaultSchedule: ScheduleDay[] = [
 export const accommodationSuggestions: Record<string, string[]> = {
   "Mundaring": ["Mundaring Weir Hotel", "Various B&Bs", "Caravan parks"],
   "Jarrahdale": ["Jarrahdale Tavern", "Local accommodation"],
-  "Dwellingup": ["Dwellingup Forest Lodge", "Dwellingup Caravan Park", "Dwellingup Hotel"],
+  "Dwellingup": [
+    "Dwellingup caravan park huts",
+    "Dwellingup Forest Lodge",
+    "Dwellingup Caravan Park",
+    "Dwellingup Hotel",
+  ],
   "Collie (Soldiers Park)": ["Collie hotels and motels", "Caravan parks"],
+  "Black Diamond Lodge, Collie": [
+    "Black Diamond Lodge — bike-friendly bed and resupply",
+    "Collie hotels and motels",
+  ],
+  "Home (Mandurah line)": ["Transperth Mandurah line to Perth"],
   "Donnybrook": ["Donnybrook hotels", "B&Bs", "Caravan parks"],
   "Donnelly River Village": ["Donnelly River Village accommodation", "Holiday village"],
   "Nannup": ["Nannup hotels", "B&Bs", "Forest Lodge"],

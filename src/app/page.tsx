@@ -21,15 +21,26 @@ export default function Home() {
           Zino and Sam Prestianni
         </h1>
         <p className="text-xl text-white font-semibold drop-shadow-md">
-          Munda Biddi End to End Planning — May 2027
+          Australind Munda Biddi — 21–25 Sep 2026
         </p>
         <p className="text-slate-100 max-w-2xl mx-auto drop-shadow-md">
-          Plan your 1,067 km cycling adventure from Mundaring to Albany along
-          Western Australia&apos;s world-class off-road trail.
+          Train to Bunbury, five days north on the Munda Biddi, then Mandurah
+          and home by rail. The May 2027 end-to-end plan is still here too.
         </p>
       </header>
 
       <div className="grid sm:grid-cols-2 gap-6">
+        <Link
+          href="/australind"
+          className="block p-6 rounded-xl bg-emerald-700/80 backdrop-blur-sm border border-white/30 shadow-lg hover:shadow-xl hover:border-emerald-200 transition-all sm:col-span-2"
+        >
+          <h2 className="font-semibold text-white mb-2">Australind trip</h2>
+          <p className="text-sm text-emerald-50">
+            ~259 km · Bunbury → Nglang Boodja → Collie → Brockman Lake →
+            Dwellingup → Mandurah. Itinerary, logistics, and a link to the live
+            GPS companion.
+          </p>
+        </Link>
         <Link
           href="/map"
           className="block p-6 rounded-xl bg-white/40 backdrop-blur-sm border border-white/30 shadow-lg hover:shadow-xl hover:border-emerald-200 transition-all"
@@ -89,11 +100,10 @@ export default function Home() {
       <div className="rounded-xl bg-white/40 backdrop-blur-sm border border-white/30 p-6">
         <h3 className="font-semibold text-emerald-800 mb-2">Quick Facts</h3>
         <ul className="text-sm text-emerald-900 space-y-1">
-          <li>• Distance: 1,067 km (663 miles)</li>
-          <li>• Route: Mundaring to Albany</li>
-          <li>• 12 purpose-built campsites</li>
-          <li>• 15+ trail towns</li>
-          <li>• Typical duration: 3–4 weeks</li>
+          <li>• Australind trip: ~259 km · 5 riding days · 21–25 Sep 2026</li>
+          <li>• Route: Australind train → Bunbury → Mandurah line home</li>
+          <li>• Hut, lodge, bush camp, and caravan-park hut nights</li>
+          <li>• End-to-end (Mundaring–Albany) still available in Trip</li>
         </ul>
       </div>
         </div>

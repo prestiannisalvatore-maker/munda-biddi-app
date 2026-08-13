@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 const navItems = [
   { href: "/", label: "Home" },
+  { href: "/australind", label: "Australind Trip" },
   { href: "/map", label: "Trail Map" },
   { href: "/info", label: "Trail Info" },
   { href: "/distance-calculator", label: "Distance Calculator" },
@@ -25,7 +26,7 @@ export default function Navigation() {
               Zino & Sam Prestianni
             </span>
             <span className="hidden sm:inline text-slate-500 text-sm">
-              Munda Biddi May 2027
+              Australind · Sep 2026
             </span>
           </Link>
           <div className="flex gap-1 overflow-x-auto py-2 scrollbar-hide">

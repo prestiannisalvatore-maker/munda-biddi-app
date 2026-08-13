@@ -1,21 +1,21 @@
 "use client";
 
-import { useState } from "react";
 import {
-  defaultSchedule,
   accommodationSuggestions,
-  type ScheduleDay,
 } from "@/data/scheduleData";
+import { useTrip } from "@/context/TripContext";
 
 export default function SchedulePage() {
-  const [schedule] = useState<ScheduleDay[]>(defaultSchedule);
+  const { trip } = useTrip();
+  const schedule = trip.schedule;
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-800">Trip Schedule</h1>
         <p className="text-slate-600 mt-1">
-          Day-by-day plan with distances, times, and accommodation
+          {trip.name} — {trip.dateLabel}. Day-by-day plan with distances, times,
+          and accommodation.
         </p>
       </div>
 
@@ -88,9 +88,9 @@ export default function SchedulePage() {
       </div>
 
       <div className="rounded-xl bg-slate-100 p-6">
-        <p className="font-semibold text-slate-800">Total: 1,060.8 km</p>
+        <p className="font-semibold text-slate-800">Total: {trip.km} km</p>
         <p className="text-sm text-slate-600 mt-1">
-          {schedule.length} days • May 1–17, 2027
+          {schedule.length} days • {trip.dateLabel} • {trip.from} → {trip.to}
         </p>
       </div>
     </div>

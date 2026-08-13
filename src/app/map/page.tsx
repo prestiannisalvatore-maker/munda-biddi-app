@@ -15,7 +15,7 @@ export default function MapPage() {
       <div>
         <h1 className="text-2xl font-bold text-slate-800">Trail Map</h1>
         <p className="text-slate-600 mt-1">
-          Munda Biddi Trail from Mundaring to Albany with topography
+          Munda Biddi Trail — Australind trip (Bunbury to Mandurah) and the full Mundaring to Albany line
         </p>
       </div>
       <TrailMap />

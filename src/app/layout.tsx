@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
+import Providers from "@/components/Providers";
+import TripBanner from "@/components/TripBanner";
 
 export const metadata: Metadata = {
-  title: "Zino and Sam Prestianni Munda Biddi End to End Planning May 2027",
+  title: "Zino and Sam Prestianni — Australind Munda Biddi",
   description:
-    "Plan your Munda Biddi Trail end-to-end ride from Mundaring to Albany. Map, distance calculator, schedule, and checklist.",
+    "Australind Munda Biddi trip 21–25 Sep 2026 (Bunbury to Mandurah) plus Mundaring to Albany end-to-end planning.",
 };
 
 export default function RootLayout({
@@ -22,10 +24,13 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-slate-50 antialiased">
-        <Navigation />
-        <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-          {children}
-        </main>
+        <Providers>
+          <Navigation />
+          <TripBanner />
+          <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+            {children}
+          </main>
+        </Providers>
       </body>
     </html>
   );
