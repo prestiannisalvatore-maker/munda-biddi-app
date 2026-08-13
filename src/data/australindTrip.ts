@@ -25,8 +25,8 @@ export interface AustralindLeg {
   lon: number;
   overnight: "camp" | "motel";
   notes: string;
+  logistics?: string[];
   googleMapsDirections?: string;
-  referenceOnly?: boolean;
 }
 
 export const australindMeta = {
@@ -46,67 +46,13 @@ export const australindLegs: AustralindLeg[] = [
     id: 1,
     date: "2026-09-21",
     dayOfWeek: "Monday",
-    label: "Ride to Perth Station",
-    route: "32 Browning St, Yokine → Perth City Station (bike)",
-    distanceKm: 6.87,
-    cumulativeKm: 0,
-    isRest: true,
-    section: "Day 0 · Logistics morning",
-    end: "Perth City Station",
-    endType: "town",
-    terrain: "City bike paths / streets",
-    camping: "n/a",
-    motel: "n/a",
-    highlight: "Roll bikes to Perth City Station for the Australind to Bunbury",
-    amber: false,
-    weatherPlace: "Perth",
-    lat: -31.9515518,
-    lon: 115.8595906,
-    overnight: "motel",
-    notes:
-      "First logistics leg before the Australind. Bike ~7 km from Yokine with loaded bikes. Leave a buffer before the train.",
-    googleMapsDirections:
-      "https://www.google.com/maps/dir/?api=1&origin=32+Browning+St,+Yokine+WA+6060&destination=Perth+City+Station,+Perth+WA+6000&travelmode=bicycling",
-    referenceOnly: true,
-  },
-  {
-    id: 2,
-    date: "2026-09-21",
-    dayOfWeek: "Monday",
-    label: "Australind to Bunbury",
-    route: "Perth City Station → Australind → Bunbury Terminal",
-    distanceKm: 0,
-    cumulativeKm: 0,
-    isRest: true,
-    section: "Day 0 · Logistics morning",
-    end: "Bunbury Terminal",
-    endType: "town",
-    terrain: "Transwa Australind train (bikes on hooks)",
-    camping: "n/a",
-    motel: "n/a",
-    highlight:
-      "Roll bikes on · hang from onboard hooks · arrive Bunbury ~midday · lunch before Day 1 ride",
-    amber: false,
-    weatherPlace: "Bunbury",
-    lat: -33.3444093,
-    lon: 115.6573016,
-    overnight: "motel",
-    notes:
-      "Book Perth → Bunbury with two bikes. Aim for midday Bunbury so Day 1 still has afternoon light.",
-    googleMapsDirections: "https://maps.app.goo.gl/qQ4oXP4v5L4hP9SQA",
-    referenceOnly: true,
-  },
-  {
-    id: 3,
-    date: "2026-09-21",
-    dayOfWeek: "Monday",
     label: "Bunbury to Nglang Boodja Hut",
     route:
       "Bunbury Terminal → Preston River / Dardanup / Ferguson Rd → Munda Biddi → Nglang Boodja Hut",
     distanceKm: 32.11,
     cumulativeKm: 32.11,
     isRest: false,
-    section: "Day 1 · Onto the trail",
+    section: "Day 1 · Train in, onto the trail",
     end: "Nglang Boodja Hut",
     endType: "hut",
     terrain: "Road connector + Ferguson Valley climb onto Munda Biddi",
@@ -121,9 +67,16 @@ export const australindLegs: AustralindLeg[] = [
     overnight: "camp",
     notes:
       "Leave town on the Preston River path (not straight through). Ferguson Rd from Dardanup joins the Munda Biddi. First trail overnight.",
+    logistics: [
+      "Morning: bike ~7 km from 32 Browning St, Yokine to Perth City Station.",
+      "Transwa Australind Perth → Bunbury (bikes on hooks). Aim for midday arrival.",
+      "Lunch in Bunbury, then ride onto the trail.",
+    ],
+    googleMapsDirections:
+      "https://www.google.com/maps/dir/?api=1&origin=32+Browning+St,+Yokine+WA+6060&destination=Perth+City+Station,+Perth+WA+6000&travelmode=bicycling",
   },
   {
-    id: 4,
+    id: 2,
     date: "2026-09-22",
     dayOfWeek: "Tuesday",
     label: "Nglang Boodja Hut to Collie",
@@ -146,7 +99,7 @@ export const australindLegs: AustralindLeg[] = [
     notes: "Book Black Diamond Lodge ahead and confirm bike storage.",
   },
   {
-    id: 5,
+    id: 3,
     date: "2026-09-23",
     dayOfWeek: "Wednesday",
     label: "Collie to Brockman Lake Park",
@@ -170,7 +123,7 @@ export const australindLegs: AustralindLeg[] = [
       "Leave Collie full. Pack dinner and breakfast for the bush camp. Strong lights if dusk catches you. Optional sealed shortcuts if needed.",
   },
   {
-    id: 6,
+    id: 4,
     date: "2026-09-24",
     dayOfWeek: "Thursday",
     label: "Brockman Lake to Dwellingup",
@@ -193,7 +146,7 @@ export const australindLegs: AustralindLeg[] = [
     notes: "Confirm hut/cabin booking and late-arrival options in Dwellingup.",
   },
   {
-    id: 7,
+    id: 5,
     date: "2026-09-25",
     dayOfWeek: "Friday",
     label: "Dwellingup to Mandurah",
@@ -217,31 +170,10 @@ export const australindLegs: AustralindLeg[] = [
     overnight: "motel",
     notes:
       "North Spur Road is steep downhill this direction. Lunch in Pinjarra, then Paterson Rd into Mandurah.",
-  },
-  {
-    id: 8,
-    date: "2026-09-25",
-    dayOfWeek: "Friday",
-    label: "Mandurah line home",
-    route: "Mandurah → Perth City Station (Transperth Mandurah line)",
-    distanceKm: 0,
-    cumulativeKm: 259.18,
-    isRest: true,
-    section: "Day 5 · Logistics home",
-    end: "Perth City Station",
-    endType: "town",
-    terrain: "Transperth Mandurah line (bikes permitted off-peak / check rules)",
-    camping: "n/a",
-    motel: "Home",
-    highlight: "Train from Mandurah back to Perth after the ride",
-    amber: false,
-    weatherPlace: "Perth",
-    lat: -31.9515518,
-    lon: 115.8595906,
-    overnight: "motel",
-    notes: "Confirm bike-on-train rules and Friday timetable closer to travel.",
+    logistics: [
+      "Evening: Transperth Mandurah line to Perth City Station (check bike-on-train rules and Friday timetable).",
+    ],
     googleMapsDirections: "https://maps.app.goo.gl/PrG9Fe9Wm5dm3H2cA",
-    referenceOnly: true,
   },
 ];
 
@@ -266,7 +198,7 @@ export const australindLogistics: LogisticsGate[] = [
   },
   {
     id: "australind",
-    dayId: 2,
+    dayId: 1,
     kind: "Booking",
     title: "Australind tickets + bikes",
     detail:
@@ -275,7 +207,7 @@ export const australindLogistics: LogisticsGate[] = [
   },
   {
     id: "bunbury-exit",
-    dayId: 3,
+    dayId: 1,
     kind: "Access",
     title: "Bunbury exit via Preston River",
     detail:
@@ -284,7 +216,7 @@ export const australindLogistics: LogisticsGate[] = [
   },
   {
     id: "black-diamond",
-    dayId: 4,
+    dayId: 2,
     kind: "Booking",
     title: "Black Diamond Lodge, Collie",
     detail:
@@ -293,7 +225,7 @@ export const australindLogistics: LogisticsGate[] = [
   },
   {
     id: "route-updates",
-    dayId: 3,
+    dayId: 1,
     kind: "Alerts",
     title: "Check Munda Biddi + DBCA alerts",
     detail:
@@ -302,7 +234,7 @@ export const australindLogistics: LogisticsGate[] = [
   },
   {
     id: "day3-food",
-    dayId: 5,
+    dayId: 3,
     kind: "Water",
     title: "Day 3 food & water buffer",
     detail:
@@ -311,7 +243,7 @@ export const australindLogistics: LogisticsGate[] = [
   },
   {
     id: "offline-maps",
-    dayId: 5,
+    dayId: 3,
     kind: "Safety",
     title: "Offline maps downloaded",
     detail:
@@ -320,7 +252,7 @@ export const australindLogistics: LogisticsGate[] = [
   },
   {
     id: "brockman-breakfast",
-    dayId: 6,
+    dayId: 4,
     kind: "Resupply",
     title: "Brockman Lake cafe (~8am)",
     detail:
@@ -329,7 +261,7 @@ export const australindLogistics: LogisticsGate[] = [
   },
   {
     id: "dwellingup-huts",
-    dayId: 6,
+    dayId: 4,
     kind: "Booking",
     title: "Dwellingup caravan park huts",
     detail: "Day 4 overnight. Confirm hut/cabin booking and late-arrival options.",
@@ -337,7 +269,7 @@ export const australindLogistics: LogisticsGate[] = [
   },
   {
     id: "mandurah-home",
-    dayId: 7,
+    dayId: 5,
     kind: "Access",
     title: "Mandurah line home",
     detail:

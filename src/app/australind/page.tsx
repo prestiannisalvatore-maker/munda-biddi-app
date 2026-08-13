@@ -76,8 +76,8 @@ export default function AustralindTripPage() {
       <section className="space-y-4">
         <h2 className="text-xl font-semibold text-slate-800">Itinerary</h2>
         <p className="text-sm text-slate-600">
-          Trains bookend the week. Riding days are numbered 1–5 on the schedule
-          and calendar.
+          One day per date, 21–25 Sep 2026. Train transfers sit on Monday
+          morning and Friday evening, not as extra days.
         </p>
         <div className="space-y-4">
           {australindLegs.map((leg) => (
@@ -98,11 +98,9 @@ export default function AustralindTripPage() {
                   <span className="text-sm text-slate-500">
                     {leg.dayOfWeek} {leg.date}
                   </span>
-                  {!leg.referenceOnly && (
-                    <span className="text-sm font-medium text-emerald-700">
-                      {leg.distanceKm} km
-                    </span>
-                  )}
+                  <span className="text-sm font-medium text-emerald-700">
+                    {leg.distanceKm} km
+                  </span>
                   {leg.amber && (
                     <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
                       Amber day
@@ -112,6 +110,13 @@ export default function AustralindTripPage() {
               </div>
               <div className="px-5 py-4 space-y-2 text-sm text-slate-700">
                 <p>{leg.route}</p>
+                {leg.logistics && leg.logistics.length > 0 && (
+                  <ul className="list-disc pl-5 text-slate-600 space-y-1">
+                    {leg.logistics.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                )}
                 <p className="text-slate-600">{leg.highlight}</p>
                 <p>
                   <span className="font-medium">Overnight:</span>{" "}

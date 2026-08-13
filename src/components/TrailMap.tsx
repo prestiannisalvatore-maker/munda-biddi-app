@@ -276,7 +276,7 @@ export default function TrailMap() {
       .addTo(overlay)
       .bindPopup("Australind");
 
-    const overnight = australindLegs.filter((leg) => !leg.referenceOnly);
+    const overnight = australindLegs;
     overnight.forEach((leg) => {
       L.circleMarker([leg.lat, leg.lon], {
         radius: 7,
