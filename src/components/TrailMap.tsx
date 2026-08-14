@@ -3,8 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import { campsiteMarkers, townMarkers } from "@/data/mapLocations";
-import { useTrip } from "@/context/TripContext";
-import { australindLegs } from "@/data/australindTrip";
 import {
   buildTrailPath,
   findClosestOnTrail,
@@ -68,17 +66,6 @@ const townIcon = (name: string, major: boolean) => {
   });
 };
 
-const homeIcon = (name: string) =>
-  L.divIcon({
-    className: "town-marker",
-    html: `<div style="display:flex;flex-direction:column;align-items:center;gap:0;">
-      <span style="font-size:18px;line-height:1;">🏠</span>
-      <span style="font-size:10px;font-weight:700;color:#1e293b;white-space:nowrap;text-shadow:0 0 2px white,0 0 2px white;">${name}</span>
-    </div>`,
-    iconSize: [80, 36],
-    iconAnchor: [40, 36],
-  });
-
 type MeasurePoint = { lat: number; lng: number; cumDist: number };
 
 export default function TrailMap() {
@@ -87,14 +74,12 @@ export default function TrailMap() {
   const trailPathRef = useRef<TrailPath | null>(null);
   const userStartMarkerRef = useRef<L.Marker | null>(null);
   const userEndMarkerRef = useRef<L.Marker | null>(null);
-  const tripOverlayRef = useRef<L.LayerGroup | null>(null);
   const placeModeRef = useRef<"idle" | "start" | "end">("idle");
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [placeMode, setPlaceMode] = useState<"idle" | "start" | "end">("idle");
   const [measureStart, setMeasureStart] = useState<MeasurePoint | null>(null);
   const [measureEnd, setMeasureEnd] = useState<MeasurePoint | null>(null);
-  const { tripId } = useTrip();
 
   const measureDistance =
     measureStart && measureEnd
@@ -186,10 +171,10 @@ export default function TrailMap() {
 
         L.marker([-31.897, 116.171], { icon: startIcon })
           .addTo(map)
-          .bindPopup("Mundaring (E2E start)");
+          .bindPopup("Mundaring (Start)");
         L.marker([-35.023, 117.881], { icon: endIcon })
           .addTo(map)
-          .bindPopup("Albany (E2E finish)");
+          .bindPopup("Albany (Finish)");
 
         campsiteMarkers.forEach(({ name, lat, lng }) => {
           L.marker([lat, lng], { icon: tentIcon(name) })
@@ -224,7 +209,6 @@ export default function TrailMap() {
         });
 
         mapInstanceRef.current = map;
-        tripOverlayRef.current = L.layerGroup().addTo(map);
       } catch (err) {
         console.error("Failed to load trail KML:", err);
       } finally {
@@ -242,61 +226,8 @@ export default function TrailMap() {
       }
       userStartMarkerRef.current = null;
       userEndMarkerRef.current = null;
-      tripOverlayRef.current = null;
     };
   }, [mounted]);
-
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    const overlay = tripOverlayRef.current;
-    if (!map || !overlay || loading) return;
-    overlay.clearLayers();
-    if (tripId !== "australind") return;
-
-    const tripStart = L.divIcon({
-      className: "custom-marker",
-      html: '<div style="background:#16a34a;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.3)"></div>',
-      iconSize: [22, 22],
-      iconAnchor: [11, 11],
-    });
-    const tripEnd = L.divIcon({
-      className: "custom-marker",
-      html: '<div style="background:#dc2626;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.3)"></div>',
-      iconSize: [22, 22],
-      iconAnchor: [11, 11],
-    });
-
-    L.marker([-33.3444093, 115.6573016], { icon: tripStart })
-      .addTo(overlay)
-      .bindPopup("Bunbury Terminal (Australind trip start)");
-    L.marker([-32.5361164, 115.7424809], { icon: tripEnd })
-      .addTo(overlay)
-      .bindPopup("Mandurah Station (Australind trip finish)");
-    L.marker([-33.2789, 115.716], { icon: homeIcon("Australind") })
-      .addTo(overlay)
-      .bindPopup("Australind");
-
-    const overnight = australindLegs;
-    overnight.forEach((leg) => {
-      L.circleMarker([leg.lat, leg.lon], {
-        radius: 7,
-        color: "#fff",
-        weight: 2,
-        fillColor: leg.amber ? "#d97706" : "#0f766e",
-        fillOpacity: 0.95,
-      })
-        .addTo(overlay)
-        .bindPopup(`<strong>${leg.label}</strong><br/>${leg.end}<br/>${leg.distanceKm} km`);
-    });
-
-    const bounds = L.latLngBounds(
-      overnight.map((leg) => [leg.lat, leg.lon] as [number, number])
-    );
-    bounds.extend([-33.2789, 115.716]);
-    bounds.extend([-33.3444093, 115.6573016]);
-    bounds.extend([-32.5361164, 115.7424809]);
-    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 10 });
-  }, [tripId, loading]);
 
   useEffect(() => {
     const map = mapInstanceRef.current;
@@ -412,11 +343,11 @@ export default function TrailMap() {
         </span>
         <span className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-green-600 border-2 border-white shadow" />
-          Trail start (Mundaring / Bunbury)
+          Trail start (Mundaring)
         </span>
         <span className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-red-600 border-2 border-white shadow" />
-          Trail finish (Albany / Mandurah)
+          Trail finish (Albany)
         </span>
         <span className="flex items-center gap-2">
           <span className="w-4 h-4 rounded-full bg-green-600 border-2 border-white shadow font-bold text-white text-xs flex items-center justify-center">S</span>

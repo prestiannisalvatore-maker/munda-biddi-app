@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   format,
   startOfMonth,
@@ -9,23 +9,17 @@ import {
   endOfWeek,
   addDays,
   isSameMonth,
+  isSameDay,
   addMonths,
   subMonths,
 } from "date-fns";
-import { useTrip } from "@/context/TripContext";
+import { defaultSchedule } from "@/data/scheduleData";
 
 export default function CalendarPage() {
-  const { trip } = useTrip();
-  const [year, month] = trip.startDate.split("-").map(Number);
-  const [currentMonth, setCurrentMonth] = useState(new Date(year, month - 1, 1));
-
-  useEffect(() => {
-    const [y, m] = trip.startDate.split("-").map(Number);
-    setCurrentMonth(new Date(y, m - 1, 1));
-  }, [trip.startDate]);
+  const [currentMonth, setCurrentMonth] = useState(new Date(2027, 4, 1)); // May 2027
 
   const scheduleByDate = new Map<string, { from: string; to: string; km: number }>();
-  trip.schedule.forEach((d) => {
+  defaultSchedule.forEach((d) => {
     scheduleByDate.set(d.date, { from: d.from, to: d.to, km: d.km });
   });
 
@@ -48,7 +42,7 @@ export default function CalendarPage() {
       <div>
         <h1 className="text-2xl font-bold text-slate-800">Trip Calendar</h1>
         <p className="text-slate-600 mt-1">
-          {trip.name}: {trip.dateLabel}
+          Your scheduled trip: May 1–17, 2027
         </p>
       </div>
 
@@ -125,7 +119,7 @@ export default function CalendarPage() {
       <div className="rounded-xl bg-emerald-50 border border-emerald-100 p-4">
         <p className="text-sm font-medium text-emerald-800">Trip dates</p>
         <p className="text-emerald-700 mt-1">
-          {trip.dateLabel} • {trip.days} days on trail
+          May 1–17, 2027 • 17 days on trail
         </p>
       </div>
     </div>

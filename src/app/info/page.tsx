@@ -84,9 +84,7 @@ export default function InfoPage() {
         <p className="text-slate-700 leading-relaxed">
           Major towns: Mundaring, Jarrahdale, Dwellingup, Collie, Donnybrook,
           Boyanup, Jarrahwood, Nannup, Donnelly River Village, Manjimup, Quinninup,
-          Pemberton, Northcliffe, Walpole, Denmark, Albany. Australind / Bunbury
-          and Mandurah are access towns for the September 2026 northern section
-          trip (train in, ride north, train home).
+          Pemberton, Northcliffe, Walpole, Denmark, Albany.
         </p>
 
         <h2 className="text-xl font-semibold text-slate-800 mt-8 mb-4">

@@ -102,9 +102,6 @@ export const defaultChecklist: ChecklistCategory[] = [
       { id: "plan-3", text: "Book accommodation in towns (if required)" },
       { id: "plan-4", text: "Arrange transport to/from trailheads" },
       { id: "plan-5", text: "Group of 8+? Notify Foundation 4 weeks ahead" },
-      { id: "plan-6", text: "Australind trip: book Transwa Perth → Bunbury with two bikes" },
-      { id: "plan-7", text: "Australind trip: book Black Diamond Lodge (Collie) and Dwellingup huts" },
-      { id: "plan-8", text: "Australind trip: cache offline maps on the live companion before leaving Perth" },
     ],
   },
 ];

@@ -1,24 +1,8 @@
-# Zino and Sam Prestianni — Munda Biddi planning
+# Zino and Sam Prestianni — Munda Biddi End to End Planning May 2027
 
-A web application for planning Munda Biddi rides.
-
-## Australind trip (21–25 Sep 2026)
-
-The trip you keep looking for: **train to Bunbury, five days north on the Munda Biddi, Mandurah line home** (~259 km).
-
-- In this app: [Days itinerary](/itinerary) — five cards only (21–25 Sep 2026). Friday is one day: ride to Mandurah, then train home.
-
-Use the **Trip** switcher in the header to flip between this Australind week and the May 2027 Mundaring–Albany end-to-end plan.
+A web application for planning your Munda Biddi Trail end-to-end ride from Mundaring to Albany (1,067 km).
 
 ## Features
-
-- **Australind Trip** — 21–25 Sep 2026 Bunbury → Mandurah itinerary and logistics
-- **Trail Map** — Interactive map with OpenTopoMap (topography/contour lines), trail highlighted in red
-- **Trail Info** — Content from the Munda Biddi Trail Guide PDF
-- **Distance Calculator** — Calculate distances between campsites and towns (like mundabiddi.org.au)
-- **Schedule** — Day-by-day plan with km, cumulative total, start/lunch/finish times, accommodation suggestions
-- **Calendar** — Trip displayed on a calendar
-- **Checklist** — Gear and planning checklist with tick boxes (saved in browser)
 
 - **Trail Map** — Interactive map with OpenTopoMap (topography/contour lines), trail highlighted in red
 - **Trail Info** — Content from the Munda Biddi Trail Guide PDF
