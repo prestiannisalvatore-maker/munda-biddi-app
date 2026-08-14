@@ -18,4 +18,12 @@ There is no Day 6, 7, or 8.
 
 ## Deploy
 
-Connect **this** GitHub repo to the existing Vercel project `australind-munda-biddi` (Settings → Git). Do not connect `munda-biddi-app`.
+This folder lives in the `munda-biddi-app` GitHub repo so it can be pushed. It is still a **separate Vercel app**.
+
+On Vercel project **australind-munda-biddi**:
+
+1. Settings → Git → connect **munda-biddi-app**
+2. Settings → General → **Root Directory** → `australind-companion`
+3. Deploy
+
+The May 2027 end-to-end planner stays at the repo root and is a different Vercel project.
