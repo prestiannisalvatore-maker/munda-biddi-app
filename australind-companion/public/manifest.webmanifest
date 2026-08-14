@@ -1,0 +1,10 @@
+{
+  "name": "Australind Munda Biddi",
+  "short_name": "Australind",
+  "description": "Train to Bunbury, ride the northern Munda Biddi to Mandurah. Built for Zino & Sam Prestianni.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#eef3ef",
+  "theme_color": "#1f4d3a",
+  "orientation": "portrait-primary"
+}
