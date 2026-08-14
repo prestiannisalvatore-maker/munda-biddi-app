@@ -1,26 +1,26 @@
-"use client";
-
-import { format, parseISO } from "date-fns";
 import { australindLegs } from "@/data/australindTrip";
+
+function formatLegDate(date: string, dayOfWeek: string) {
+  const day = Number(date.slice(8, 10));
+  return `${dayOfWeek.slice(0, 3)} ${day} Sep 2026`;
+}
 
 export default function DaysItinerary() {
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-[family-name:var(--font-fraunces),Georgia,serif] text-3xl text-slate-900">
-            Itinerary
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            21–25 Sep 2026 · five days · ~259 km
-          </p>
-        </div>
+    <div className="mx-auto max-w-3xl">
+      <div>
+        <h1 className="font-[family-name:var(--font-fraunces),Georgia,serif] text-3xl text-slate-900">
+          Itinerary
+        </h1>
+        <p className="mt-1 text-sm text-slate-500">
+          21–25 Sep 2026 · five days · ~259 km. No Day 6, 7, or 8.
+        </p>
       </div>
 
       <ul className="mt-8 space-y-5">
         {australindLegs.map((leg) => (
           <li
-            key={leg.date}
+            key={leg.id}
             id={`day-${leg.id}`}
             className={`scroll-mt-24 overflow-hidden rounded-2xl border-2 bg-white shadow-sm ${
               leg.amber ? "border-amber-300" : "border-slate-200"
@@ -38,7 +38,7 @@ export default function DaysItinerary() {
                   {leg.label}
                 </h2>
                 <p className="mt-0.5 text-sm text-slate-500">
-                  {format(parseISO(leg.date), "EEE d MMM yyyy")}
+                  {formatLegDate(leg.date, leg.dayOfWeek)}
                 </p>
                 <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                   {leg.section}

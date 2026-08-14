@@ -3,6 +3,7 @@ import "./globals.css";
 import Navigation from "@/components/Navigation";
 import Providers from "@/components/Providers";
 import TripBanner from "@/components/TripBanner";
+import CompanionCacheReset from "@/components/CompanionCacheReset";
 
 export const metadata: Metadata = {
   title: "Zino and Sam Prestianni — Australind Munda Biddi",
@@ -25,6 +26,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-slate-50 antialiased">
         <Providers>
+          <CompanionCacheReset />
           <Navigation />
           <TripBanner />
           <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">

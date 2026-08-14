@@ -6,8 +6,7 @@ A web application for planning Munda Biddi rides.
 
 The trip you keep looking for: **train to Bunbury, five days north on the Munda Biddi, Mandurah line home** (~259 km).
 
-- In this app: [Australind trip](/australind) — itinerary, logistics, schedule, calendar, map
-- Live GPS companion (already deployed): [australind-munda-biddi.vercel.app](https://australind-munda-biddi.vercel.app/)
+- In this app: [Days itinerary](/itinerary) — five cards only (21–25 Sep 2026). Friday is one day: ride to Mandurah, then train home.
 
 Use the **Trip** switcher in the header to flip between this Australind week and the May 2027 Mundaring–Albany end-to-end plan.
 
