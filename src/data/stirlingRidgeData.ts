@@ -41,7 +41,9 @@ export interface GearItem {
   id: string;
   name: string;
   category: string;
+  packType: "base" | "consumable"; // base = equipment, consumable = water/food
   essential: boolean;
+  weightGrams?: number; // approximate weight in grams
   notes?: string;
 }
 
@@ -340,53 +342,58 @@ export const itinerary3Day: DayItinerary[] = [
   },
 ];
 
-// Gear checklist
+// Gear checklist with weights (approximate, in grams)
 export const gearChecklist: GearItem[] = [
-  // Navigation
-  { id: "map", name: "Topographic map", category: "Navigation", essential: true, notes: "1:25,000 scale recommended" },
-  { id: "compass", name: "Compass", category: "Navigation", essential: true },
-  { id: "gps", name: "GPS device or phone with offline maps", category: "Navigation", essential: true, notes: "Download AllTrails or similar offline" },
-  { id: "plb", name: "Personal Locator Beacon (PLB)", category: "Navigation", essential: true, notes: "Strongly recommended by Parks WA" },
+  // Navigation - Base Equipment
+  { id: "map", name: "Topographic map", category: "Navigation", packType: "base", essential: true, weightGrams: 80, notes: "1:25,000 scale recommended" },
+  { id: "compass", name: "Compass", category: "Navigation", packType: "base", essential: true, weightGrams: 50 },
+  { id: "gps", name: "GPS device or phone with offline maps", category: "Navigation", packType: "base", essential: true, weightGrams: 200, notes: "Download AllTrails or similar offline" },
+  { id: "plb", name: "Personal Locator Beacon (PLB)", category: "Navigation", packType: "base", essential: true, weightGrams: 150, notes: "Strongly recommended by Parks WA" },
   
-  // Shelter
-  { id: "tent", name: "Lightweight tent", category: "Shelter", essential: true, notes: "Free-standing recommended due to rocky ground" },
-  { id: "groundsheet", name: "Groundsheet/footprint", category: "Shelter", essential: false },
-  { id: "sleeping-bag", name: "Sleeping bag (0°C comfort)", category: "Shelter", essential: true, notes: "Temperatures can drop to 5°C or below" },
-  { id: "sleeping-pad", name: "Sleeping pad", category: "Shelter", essential: true },
+  // Shelter - Base Equipment
+  { id: "tent", name: "Lightweight tent", category: "Shelter", packType: "base", essential: true, weightGrams: 1200, notes: "Free-standing recommended due to rocky ground" },
+  { id: "groundsheet", name: "Groundsheet/footprint", category: "Shelter", packType: "base", essential: false, weightGrams: 150 },
+  { id: "sleeping-bag", name: "Sleeping bag (0°C comfort)", category: "Shelter", packType: "base", essential: true, weightGrams: 1100, notes: "Temperatures can drop to 5°C or below" },
+  { id: "sleeping-pad", name: "Sleeping pad", category: "Shelter", packType: "base", essential: true, weightGrams: 450 },
   
-  // Clothing
-  { id: "base-layers", name: "Merino base layers", category: "Clothing", essential: true },
-  { id: "fleece", name: "Fleece mid-layer", category: "Clothing", essential: true },
-  { id: "rain-jacket", name: "Waterproof jacket", category: "Clothing", essential: true, notes: "Alpine conditions possible" },
-  { id: "rain-pants", name: "Waterproof pants", category: "Clothing", essential: true },
-  { id: "gaiters", name: "Gaiters", category: "Clothing", essential: false, notes: "Protect from sword grass and rain" },
-  { id: "hiking-boots", name: "Sturdy hiking boots", category: "Clothing", essential: true, notes: "Ankle support essential for rock scrambling" },
-  { id: "spare-socks", name: "Spare socks", category: "Clothing", essential: true },
-  { id: "sun-hat", name: "Sun hat", category: "Clothing", essential: true },
-  { id: "beanie", name: "Warm beanie", category: "Clothing", essential: true },
-  { id: "gloves", name: "Hiking gloves", category: "Clothing", essential: false, notes: "Useful for scrambling" },
+  // Clothing - Base Equipment
+  { id: "base-layers", name: "Merino base layers", category: "Clothing", packType: "base", essential: true, weightGrams: 350 },
+  { id: "fleece", name: "Fleece mid-layer", category: "Clothing", packType: "base", essential: true, weightGrams: 300 },
+  { id: "rain-jacket", name: "Waterproof jacket", category: "Clothing", packType: "base", essential: true, weightGrams: 350, notes: "Alpine conditions possible" },
+  { id: "rain-pants", name: "Waterproof pants", category: "Clothing", packType: "base", essential: true, weightGrams: 200 },
+  { id: "gaiters", name: "Gaiters", category: "Clothing", packType: "base", essential: false, weightGrams: 150, notes: "Protect from sword grass and rain" },
+  { id: "hiking-boots", name: "Sturdy hiking boots", category: "Clothing", packType: "base", essential: true, weightGrams: 900, notes: "Ankle support essential for rock scrambling (worn, not packed)" },
+  { id: "spare-socks", name: "Spare socks (2 pairs)", category: "Clothing", packType: "base", essential: true, weightGrams: 120 },
+  { id: "sun-hat", name: "Sun hat", category: "Clothing", packType: "base", essential: true, weightGrams: 80 },
+  { id: "beanie", name: "Warm beanie", category: "Clothing", packType: "base", essential: true, weightGrams: 60 },
+  { id: "gloves", name: "Hiking gloves", category: "Clothing", packType: "base", essential: false, weightGrams: 50, notes: "Useful for scrambling" },
   
-  // Water & Food
-  { id: "water-bladder", name: "Water bladder or bottles", category: "Water & Food", essential: true, notes: "Carry 4-5L per day minimum" },
-  { id: "water-total", name: "Total water (8-10L for 2 days)", category: "Water & Food", essential: true, notes: "NO reliable water sources on trail" },
-  { id: "food", name: "Food for duration + extra day", category: "Water & Food", essential: true },
-  { id: "stove", name: "Lightweight stove (optional)", category: "Water & Food", essential: false, notes: "Many go no-cook to save weight" },
+  // Water & Food - Consumables
+  { id: "water-bladder", name: "Water bladder or bottles (empty)", category: "Water & Food", packType: "base", essential: true, weightGrams: 180, notes: "Capacity for 4-5L per day" },
+  { id: "water-day1", name: "Water - Day 1 (5L)", category: "Water & Food", packType: "consumable", essential: true, weightGrams: 5000, notes: "1L = 1kg, no water sources on trail" },
+  { id: "water-day2", name: "Water - Day 2 (4L)", category: "Water & Food", packType: "consumable", essential: true, weightGrams: 4000, notes: "Slightly less as you'll drink Day 1 supply" },
+  { id: "food-day1", name: "Food - Day 1", category: "Water & Food", packType: "consumable", essential: true, weightGrams: 800, notes: "High calorie, lightweight options" },
+  { id: "food-day2", name: "Food - Day 2", category: "Water & Food", packType: "consumable", essential: true, weightGrams: 800 },
+  { id: "food-emergency", name: "Emergency food (extra day)", category: "Water & Food", packType: "consumable", essential: true, weightGrams: 400, notes: "Energy bars, nuts, dried fruit" },
+  { id: "stove", name: "Lightweight stove + fuel", category: "Water & Food", packType: "base", essential: false, weightGrams: 250, notes: "Many go no-cook to save weight" },
   
-  // Safety
-  { id: "first-aid", name: "First aid kit", category: "Safety", essential: true },
-  { id: "headlamp", name: "Headlamp + spare batteries", category: "Safety", essential: true },
-  { id: "emergency-blanket", name: "Emergency space blanket", category: "Safety", essential: true },
-  { id: "whistle", name: "Whistle", category: "Safety", essential: true },
-  { id: "sunscreen", name: "Sunscreen SPF50+", category: "Safety", essential: true },
-  { id: "insect-repellent", name: "Insect repellent", category: "Safety", essential: false },
+  // Safety - Base Equipment
+  { id: "first-aid", name: "First aid kit", category: "Safety", packType: "base", essential: true, weightGrams: 300 },
+  { id: "headlamp", name: "Headlamp + spare batteries", category: "Safety", packType: "base", essential: true, weightGrams: 100 },
+  { id: "emergency-blanket", name: "Emergency space blanket", category: "Safety", packType: "base", essential: true, weightGrams: 50 },
+  { id: "whistle", name: "Whistle", category: "Safety", packType: "base", essential: true, weightGrams: 10 },
+  { id: "sunscreen", name: "Sunscreen SPF50+", category: "Safety", packType: "consumable", essential: true, weightGrams: 100 },
+  { id: "insect-repellent", name: "Insect repellent", category: "Safety", packType: "consumable", essential: false, weightGrams: 50 },
   
-  // Other
-  { id: "trekking-poles", name: "Trekking poles", category: "Other", essential: false, notes: "Helpful for steep sections" },
-  { id: "camera", name: "Camera", category: "Other", essential: false },
-  { id: "phone", name: "Mobile phone (charged)", category: "Other", essential: true, notes: "Limited reception - mainly for PLB backup" },
-  { id: "power-bank", name: "Power bank", category: "Other", essential: false },
-  { id: "trowel", name: "Trowel for waste burial", category: "Other", essential: true, notes: "Bury waste 15cm deep minimum" },
-  { id: "plastic-bags", name: "Plastic bags for rubbish", category: "Other", essential: true, notes: "Pack out everything" },
+  // Other - Base Equipment
+  { id: "backpack", name: "Backpack (50-65L)", category: "Other", packType: "base", essential: true, weightGrams: 1500, notes: "With hip belt for scrambling" },
+  { id: "trekking-poles", name: "Trekking poles", category: "Other", packType: "base", essential: false, weightGrams: 500, notes: "Helpful for steep sections" },
+  { id: "camera", name: "Camera", category: "Other", packType: "base", essential: false, weightGrams: 400 },
+  { id: "phone", name: "Mobile phone (charged)", category: "Other", packType: "base", essential: true, weightGrams: 200, notes: "Limited reception - mainly for PLB backup" },
+  { id: "power-bank", name: "Power bank", category: "Other", packType: "base", essential: false, weightGrams: 250 },
+  { id: "trowel", name: "Trowel for waste burial", category: "Other", packType: "base", essential: true, weightGrams: 80, notes: "Bury waste 15cm deep minimum" },
+  { id: "plastic-bags", name: "Plastic bags for rubbish", category: "Other", packType: "base", essential: true, weightGrams: 30, notes: "Pack out everything" },
+  { id: "toilet-paper", name: "Toilet paper", category: "Other", packType: "consumable", essential: true, weightGrams: 50 },
 ];
 
 // Exit routes (escape points)
