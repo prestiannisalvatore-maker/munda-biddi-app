@@ -37,33 +37,6 @@ const campIcon = (name: string) =>
     iconAnchor: [50, 35],
   });
 
-const startIcon = L.divIcon({
-  className: "start-marker",
-  html: `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
-    <div style="background:#16a34a;width:20px;height:20px;border-radius:50%;border:3px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;">
-      <span style="color:white;font-size:10px;font-weight:bold;">S</span>
-    </div>
-    <span style="font-size:10px;font-weight:700;color:#16a34a;white-space:nowrap;text-shadow:0 0 3px white,0 0 3px white;">
-      START
-    </span>
-  </div>`,
-  iconSize: [60, 50],
-  iconAnchor: [30, 25],
-});
-
-const endIcon = L.divIcon({
-  className: "end-marker",
-  html: `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
-    <div style="background:#dc2626;width:20px;height:20px;border-radius:50%;border:3px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;">
-      <span style="color:white;font-size:10px;font-weight:bold;">E</span>
-    </div>
-    <span style="font-size:10px;font-weight:700;color:#dc2626;white-space:nowrap;text-shadow:0 0 3px white,0 0 3px white;">
-      FINISH
-    </span>
-  </div>`,
-  iconSize: [60, 50],
-  iconAnchor: [30, 25],
-});
 
 export default function StirlingMap() {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -101,7 +74,7 @@ export default function StirlingMap() {
     );
 
     const map = L.map(mapRef.current, {
-      center: [-34.39, 118.12],
+      center: [-34.375, 118.27],
       zoom: 13,
       layers: [topoLayer],
       minZoom: 11,
@@ -136,14 +109,6 @@ export default function StirlingMap() {
         L.latLng(ne.lat + padLat, ne.lng + padLng)
       )
     );
-
-    L.marker([trailInfo.startPoint.lat, trailInfo.startPoint.lng], { icon: startIcon })
-      .addTo(map)
-      .bindPopup(`<strong>Start: ${trailInfo.startPoint.name}</strong><br/>Ellen Peak trailhead`);
-
-    L.marker([trailInfo.endPoint.lat, trailInfo.endPoint.lng], { icon: endIcon })
-      .addTo(map)
-      .bindPopup(`<strong>Finish: ${trailInfo.endPoint.name}</strong><br/>End of the ridge walk`);
 
     const peakMarkers: L.Marker[] = [];
     peaks.forEach((peak) => {
@@ -236,7 +201,7 @@ export default function StirlingMap() {
       <div className="bg-white px-4 py-3 border-t border-slate-200 flex flex-wrap gap-4 text-sm text-slate-600">
         <span className="flex items-center gap-2">
           <span className="w-4 h-1 bg-orange-500 rounded" />
-          Ridge Route
+          Ridge Route (approximate)
         </span>
         <span className="flex items-center gap-2">
           <span className="text-base">⛰️</span>
@@ -245,14 +210,6 @@ export default function StirlingMap() {
         <span className="flex items-center gap-2">
           <span className="text-base">🏕️</span>
           Campsites
-        </span>
-        <span className="flex items-center gap-2">
-          <span className="w-4 h-4 rounded-full bg-green-600 border-2 border-white shadow flex items-center justify-center text-white text-xs font-bold">S</span>
-          Start (Ellen Peak)
-        </span>
-        <span className="flex items-center gap-2">
-          <span className="w-4 h-4 rounded-full bg-red-600 border-2 border-white shadow flex items-center justify-center text-white text-xs font-bold">E</span>
-          Finish (Bluff Knoll)
         </span>
       </div>
     </div>
