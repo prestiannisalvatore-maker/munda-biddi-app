@@ -7,9 +7,7 @@ const navItems = [
   { href: "/", label: "Home" },
   { href: "/map", label: "Trail Map" },
   { href: "/info", label: "Trail Info" },
-  { href: "/distance-calculator", label: "Distance Calculator" },
-  { href: "/schedule", label: "Schedule" },
-  { href: "/calendar", label: "Calendar" },
+  { href: "/itinerary", label: "Itinerary" },
   { href: "/checklist", label: "Checklist" },
 ];
 
@@ -21,11 +19,11 @@ export default function Navigation() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-lg font-semibold text-slate-800">
-              Zino & Sam Prestianni
+            <span className="text-xl font-bold text-amber-700">
+              ⛰️ Stirling Ridge Walk
             </span>
             <span className="hidden sm:inline text-slate-500 text-sm">
-              Munda Biddi May 2027
+              Western Australia
             </span>
           </Link>
           <div className="flex gap-1 overflow-x-auto py-2 scrollbar-hide">
@@ -37,7 +35,7 @@ export default function Navigation() {
                   href={item.href}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                     isActive
-                      ? "bg-emerald-600 text-white"
+                      ? "bg-amber-600 text-white"
                       : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                   }`}
                 >

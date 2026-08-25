@@ -3,9 +3,9 @@ import "./globals.css";
 import Navigation from "@/components/Navigation";
 
 export const metadata: Metadata = {
-  title: "Zino and Sam Prestianni Munda Biddi End to End Planning May 2027",
+  title: "Stirling Ridge Walk | Western Australia Hiking Guide",
   description:
-    "Plan your Munda Biddi Trail end-to-end ride from Mundaring to Albany. Map, distance calculator, schedule, and checklist.",
+    "Complete guide to hiking the Stirling Ridge Walk in Stirling Range National Park, Western Australia. Trail info, itinerary, map, and gear checklist.",
 };
 
 export default function RootLayout({
@@ -17,7 +17,7 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <link
-          href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Pacifico&family=Inter:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
       </head>
