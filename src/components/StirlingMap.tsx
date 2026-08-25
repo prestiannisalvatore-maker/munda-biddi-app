@@ -74,10 +74,10 @@ export default function StirlingMap() {
     );
 
     const map = L.map(mapRef.current, {
-      center: [-34.375, 118.27],
-      zoom: 13,
+      center: [-34.355, 118.31],
+      zoom: 12,
       layers: [topoLayer],
-      minZoom: 11,
+      minZoom: 10,
       maxZoom: 17,
     });
 

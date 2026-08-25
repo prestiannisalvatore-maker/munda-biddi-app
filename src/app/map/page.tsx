@@ -96,11 +96,31 @@ export default function MapPage() {
         </div>
       </div>
 
-      {/* Required Navigation Resources */}
+      {/* Download GPX File */}
+      <div className="bg-emerald-100 rounded-xl border-2 border-emerald-500 p-6">
+        <h2 className="font-bold text-lg text-emerald-800 mb-4">📥 Download GPX Track</h2>
+        <p className="text-emerald-700 text-sm mb-4">
+          This is a verified GPS track recorded during an actual hike on April 29, 2022. 
+          Download and load into your GPS device BEFORE your hike.
+        </p>
+        <a
+          href="/stirling-ridge-walk.gpx"
+          download="stirling-ridge-walk.gpx"
+          className="inline-flex items-center gap-3 px-6 py-4 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-bold text-lg"
+        >
+          <span className="text-2xl">📍</span>
+          Download Verified GPX Track
+        </a>
+        <p className="text-emerald-600 text-xs mt-3">
+          Source: Ride With GPS - 1,514 track points recorded over the full route
+        </p>
+      </div>
+
+      {/* Additional Navigation Resources */}
       <div className="bg-green-50 rounded-xl border-2 border-green-400 p-6">
-        <h2 className="font-bold text-lg text-green-800 mb-4">✅ Required Navigation Resources</h2>
+        <h2 className="font-bold text-lg text-green-800 mb-4">✅ Additional Navigation Resources</h2>
         <p className="text-green-700 text-sm mb-4">
-          Download these BEFORE your hike. Test that they work offline. Your life depends on proper navigation.
+          Cross-reference with multiple sources. Test that they work offline before your hike.
         </p>
         <div className="grid sm:grid-cols-2 gap-4">
           <a
@@ -111,8 +131,8 @@ export default function MapPage() {
           >
             <span className="text-3xl">📱</span>
             <div>
-              <div className="font-bold text-green-800">AllTrails GPX Track</div>
-              <div className="text-sm text-green-600">Download for offline use - ESSENTIAL</div>
+              <div className="font-bold text-green-800">AllTrails</div>
+              <div className="text-sm text-green-600">Additional verified track</div>
             </div>
           </a>
           <a
@@ -123,8 +143,8 @@ export default function MapPage() {
           >
             <span className="text-3xl">📂</span>
             <div>
-              <div className="font-bold text-green-800">Facebook Group GPX Files</div>
-              <div className="text-sm text-green-600">Community-verified tracks and waypoints</div>
+              <div className="font-bold text-green-800">Facebook Group</div>
+              <div className="text-sm text-green-600">Community waypoints and updates</div>
             </div>
           </a>
           <a
@@ -135,8 +155,8 @@ export default function MapPage() {
           >
             <span className="text-3xl">🗺️</span>
             <div>
-              <div className="font-bold text-green-800">Trail Hiking Australia GPX</div>
-              <div className="text-sm text-green-600">Detailed route with elevation data</div>
+              <div className="font-bold text-green-800">Trail Hiking Australia</div>
+              <div className="text-sm text-green-600">Detailed route info</div>
             </div>
           </a>
           <a
@@ -147,8 +167,8 @@ export default function MapPage() {
           >
             <span className="text-3xl">⏱️</span>
             <div>
-              <div className="font-bold text-green-800">Fastest Known Time GPX</div>
-              <div className="text-sm text-green-600">Verified route files</div>
+              <div className="font-bold text-green-800">Fastest Known Time</div>
+              <div className="text-sm text-green-600">Alternative route files</div>
             </div>
           </a>
         </div>

@@ -62,13 +62,13 @@ export const trailInfo = {
   cost: "National Park fees apply ($15/vehicle/day or $30 annual pass)",
   startPoint: {
     name: "Gnowellen Road (Ellen Peak end)",
-    lat: -34.3182,
-    lng: 118.3897,
+    lat: -34.318061,
+    lng: 118.39204,
   },
   endPoint: {
     name: "Bluff Knoll Car Park",
-    lat: -34.3752,
-    lng: 118.2559,
+    lat: -34.36778,
+    lng: 118.242314,
   },
   highestPoint: {
     name: "Bluff Knoll",
@@ -80,142 +80,140 @@ export const trailInfo = {
   },
 };
 
-// Peaks along the ridge (west to east)
-// IMPORTANT: These coordinates are approximate for reference only.
-// DO NOT rely on this map for navigation. Use proper GPS with verified tracks.
+// Peaks along the ridge (coordinates derived from verified GPX track)
+// Listed west to east (Bluff Knoll to Ellen Peak)
 export const peaks: Peak[] = [
   {
     id: "bluff-knoll",
     name: "Bluff Knoll",
     elevation: 1095,
     description: "The highest peak in the Stirling Range and all of Southern WA. Features a well-maintained trail from the car park.",
-    lat: -34.3756,
-    lng: 118.2561,
+    lat: -34.3735,
+    lng: 118.2640,
   },
   {
     id: "east-peak",
     name: "East Peak",
     elevation: 997,
     description: "A challenging 400m climb from Eucalyptus Col. The final major ascent before Bluff Knoll.",
-    lat: -34.3720,
-    lng: 118.2620,
+    lat: -34.3605,
+    lng: 118.2740,
   },
   {
     id: "moongoongoonderup",
     name: "Moongoongoonderup Hill",
     elevation: 850,
     description: "A smaller hill marking the transition between Isongerup and East Peak sections.",
-    lat: -34.3700,
-    lng: 118.2680,
+    lat: -34.3636,
+    lng: 118.2800,
   },
   {
     id: "isongerup-south",
     name: "Isongerup Peak South",
     elevation: 920,
     description: "Southern summit of Isongerup, offering panoramic views of Bluff Knoll and the western peaks.",
-    lat: -34.3680,
-    lng: 118.2720,
+    lat: -34.3632,
+    lng: 118.2876,
   },
   {
     id: "isongerup-peak",
     name: "Isongerup Peak",
     elevation: 962,
     description: "The main summit of Isongerup, a turning point with stunning 360-degree views.",
-    lat: -34.3665,
-    lng: 118.2750,
+    lat: -34.3595,
+    lng: 118.2892,
   },
   {
     id: "isongerup-north",
     name: "Isongerup Peak North",
     elevation: 962,
     description: "Considered the best viewpoint on the entire ridge. Pivot point between east and west views.",
-    lat: -34.3650,
-    lng: 118.2780,
+    lat: -34.3572,
+    lng: 118.2905,
   },
   {
     id: "first-arrow",
     name: "First Arrow",
     elevation: 900,
     description: "The westernmost and most technical of the three Arrows. Features the sketchiest scrambling section.",
-    lat: -34.3635,
-    lng: 118.2810,
+    lat: -34.3569,
+    lng: 118.3013,
   },
   {
     id: "second-arrow",
     name: "Second Arrow",
     elevation: 880,
     description: "Gentler than Third Arrow with a green top and less jagged rocks.",
-    lat: -34.3620,
-    lng: 118.2840,
+    lat: -34.3561,
+    lng: 118.3071,
   },
   {
     id: "third-arrow",
     name: "Third Arrow",
     elevation: 920,
     description: "Imposing rocky formation with dramatic eastern face. Features a cave for camping nearby.",
-    lat: -34.3605,
-    lng: 118.2870,
+    lat: -34.3578,
+    lng: 118.3125,
   },
   {
     id: "bakers-knob",
     name: "Baker's Knob",
     elevation: 890,
     description: "First major peak after Pyungoorup. Offers the first view of the Arrows laid out ahead.",
-    lat: -34.3590,
-    lng: 118.2900,
+    lat: -34.3592,
+    lng: 118.3196,
   },
   {
     id: "pyungoorup",
     name: "Pyungoorup Peak",
     elevation: 1012,
     description: "Massive monolithic peak. The trail passes to the south under dramatic cliff faces.",
-    lat: -34.3750,
-    lng: 118.2950,
+    lat: -34.3582,
+    lng: 118.3297,
   },
   {
     id: "ellen-peak",
     name: "Ellen Peak",
     elevation: 1012,
     description: "Starting peak if hiking east to west. The biggest single climb of the journey.",
-    lat: -34.3831,
-    lng: 118.2761,
+    lat: -34.3517,
+    lng: 118.3375,
   },
 ];
 
-// Campsites and bivouac spots
-// IMPORTANT: These coordinates are approximate. Use proper GPS navigation.
+// Campsites and bivouac spots (coordinates derived from GPX track)
 export const campsites: CampSite[] = [
   {
     id: "third-arrow-cave",
     name: "Third Arrow Cave",
     description: "A small cave near Third Arrow offering shelter from weather. Popular overnight spot.",
     features: ["Natural shelter", "Rocky floor", "No water", "Limited space for 2-3 people"],
-    lat: -34.3608,
-    lng: 118.2865,
+    lat: -34.3575,
+    lng: 118.3130,
   },
   {
     id: "bakers-knob-saddle",
     name: "Baker's Knob Saddle",
     description: "Grassy saddle before Baker's Knob with rocky platforms for tents. Great sunset views.",
     features: ["Grassy patches", "Rocky platforms", "Wind exposed", "Stunning views of Pyungoorup"],
-    lat: -34.3595,
-    lng: 118.2895,
+    lat: -34.3590,
+    lng: 118.3220,
   },
   {
     id: "she-oak-col",
     name: "She-Oak Col",
     description: "Informal campsite at the base between First Arrow and Isongerup. Multiple tent sites.",
     features: ["Multiple tent spots", "She-Oak trees for shade", "Multiple access paths", "No water"],
-    lat: -34.3642,
-    lng: 118.2795,
+    lat: -34.3551,
+    lng: 118.2945,
   },
   {
     id: "eucalyptus-col",
     name: "Eucalyptus Col",
     description: "Protected campsite at the lowest point of the ridge, before the climb to East Peak.",
     features: ["Protected from wind", "Kingia forest", "Thick vegetation", "Historic campsite"],
-    lat: -34.3710,
-    lng: 118.2650,
+    lat: -34.3636,
+    lng: 118.2799,
   },
 ];
 
@@ -464,21 +462,60 @@ export const weatherInfo = {
   bestWeatherSite: "Bureau of Meteorology - Stirling Range National Park",
 };
 
-// Route coordinates for map (approximate, east to west)
-// WARNING: These are APPROXIMATE coordinates for visualization only.
-// DO NOT use this map for navigation. Download verified GPX tracks from AllTrails or the FB group.
+// Route coordinates from verified GPX track (April 2022 hike recording)
+// Source: Ride With GPS - Stirling Ridge Walk
+// This is actual GPS data recorded during a real hike
 export const routeCoordinates: [number, number][] = [
-  [118.2761, -34.3831], // Ellen Peak
-  [118.2950, -34.3750], // Pyungoorup area
-  [118.2900, -34.3590], // Baker's Knob
-  [118.2870, -34.3605], // Third Arrow
-  [118.2840, -34.3620], // Second Arrow
-  [118.2810, -34.3635], // First Arrow
-  [118.2795, -34.3642], // She-Oak Col
-  [118.2780, -34.3650], // Isongerup North
-  [118.2750, -34.3665], // Isongerup Peak
-  [118.2720, -34.3680], // Isongerup South
-  [118.2650, -34.3710], // Eucalyptus Col
-  [118.2620, -34.3720], // East Peak
-  [118.2561, -34.3756], // Bluff Knoll
+  [118.39204, -34.318061],   // Start - Gnowellen Road trailhead
+  [118.361656, -34.318132],  // Along fence line
+  [118.32992, -34.318167],   // Approaching national park
+  [118.327624, -34.325947],  // Turn into park
+  [118.331165, -34.335214],  // Climbing towards Ellen Peak
+  [118.335928, -34.344463],  // Ellen Peak approach
+  [118.337506, -34.351709],  // Ellen Peak area
+  [118.333058, -34.355943],  // Pyungoorup approach
+  [118.329706, -34.358237],  // Pyungoorup south side
+  [118.326594, -34.359853],  // Past Pyungoorup
+  [118.323472, -34.359012],  // Towards Baker's Knob
+  [118.319621, -34.359229],  // Baker's Knob area
+  [118.316112, -34.357895],  // Third Arrow approach
+  [118.312454, -34.357821],  // Third Arrow
+  [118.308779, -34.357187],  // Second Arrow
+  [118.307068, -34.356111],  // Between Arrows
+  [118.304482, -34.356377],  // First Arrow approach
+  [118.301312, -34.356882],  // First Arrow
+  [118.297761, -34.35589],   // She-Oak Col approach
+  [118.294515, -34.355079],  // She-Oak Col
+  [118.292031, -34.35488],   // Isongerup climb
+  [118.29047, -34.357161],   // Isongerup North
+  [118.289172, -34.359494],  // Isongerup Peak
+  [118.288539, -34.361523],  // Isongerup area
+  [118.28759, -34.363183],   // Isongerup South
+  [118.284827, -34.364587],  // Descending Isongerup
+  [118.281989, -34.365074],  // Towards Eucalyptus Col
+  [118.27986, -34.363604],   // Eucalyptus Col area
+  [118.278164, -34.361859],  // Climbing to East Peak
+  [118.275938, -34.360314],  // East Peak approach
+  [118.27405, -34.360486],   // East Peak
+  [118.271625, -34.361319],  // Past East Peak
+  [118.270579, -34.362661],  // Towards Bluff Knoll
+  [118.269839, -34.364552],  // Bluff Knoll approach
+  [118.268954, -34.367009],  // Bluff Knoll climb
+  [118.266803, -34.367686],  // Bluff Knoll area
+  [118.265343, -34.369143],  // Near summit
+  [118.264437, -34.371096],  // Summit ridge
+  [118.263981, -34.373522],  // Bluff Knoll summit area
+  [118.26279, -34.374709],   // Descent begins
+  [118.260253, -34.376143],  // Descending
+  [118.25742, -34.376484],   // Trail descent
+  [118.255682, -34.374864],  // Lower trail
+  [118.253622, -34.377684],  // Continuing descent
+  [118.251455, -34.378526],  // Near car park
+  [118.250554, -34.380469],  // Approaching finish
+  [118.250135, -34.377746],  // Near trailhead
+  [118.24999, -34.374466],   // Final section
+  [118.250849, -34.372119],  // Almost there
+  [118.248982, -34.369604],  // Near end
+  [118.244261, -34.36835],   // Final approach
+  [118.242314, -34.36778],   // End - Bluff Knoll car park
 ];
