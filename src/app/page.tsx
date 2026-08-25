@@ -199,6 +199,9 @@ export default function Home() {
 
       {/* Attribution */}
       <section className="text-center text-sm text-slate-500 py-4 border-t border-slate-200">
+        <p className="font-medium text-slate-600 mb-2">
+          Built by Salvatore Prestianni
+        </p>
         <p>
           Trail information sourced from{" "}
           <a
