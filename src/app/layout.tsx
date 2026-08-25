@@ -22,15 +22,13 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-slate-50 antialiased flex flex-col">
+        <div className="bg-amber-700 text-white text-center py-2 text-sm">
+          Built by <span className="font-semibold">Salvatore Prestianni</span>
+        </div>
         <Navigation />
         <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 flex-1">
           {children}
         </main>
-        <footer className="bg-white border-t border-slate-200 py-4">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center text-sm text-slate-500">
-            Built by <span className="font-medium text-slate-700">Salvatore Prestianni</span>
-          </div>
-        </footer>
       </body>
     </html>
   );
