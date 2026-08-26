@@ -72,7 +72,7 @@ export const trailInfo = {
   },
   highestPoint: {
     name: "Bluff Knoll",
-    elevation: 1095,
+    elevation: 1099,
   },
   lowestPoint: {
     name: "Base of East Peak climb",
@@ -86,10 +86,10 @@ export const peaks: Peak[] = [
   {
     id: "bluff-knoll",
     name: "Bluff Knoll",
-    elevation: 1095,
+    elevation: 1099,
     description: "The highest peak in the Stirling Range and all of Southern WA. Features a well-maintained trail from the car park.",
-    lat: -34.3735,
-    lng: 118.2640,
+    lat: -34.3756,
+    lng: 118.2561,
   },
   {
     id: "east-peak",
@@ -425,11 +425,11 @@ export const exitRoutes = [
 export const contacts = {
   stirlingRangeNP: {
     name: "Stirling Range National Park Office",
-    phone: "9827 9230",
+    phone: "(08) 9827 9230",
   },
   albanyDistrict: {
     name: "Albany District Office (DBCA)",
-    phone: "9842 4500",
+    phone: "(08) 9842 4500",
   },
   emergency: "000",
   bluffKnollCafe: {
