@@ -41,6 +41,46 @@ export default function MapPage() {
 
       <StirlingMap />
 
+      {/* GPS Location Info */}
+      <div className="bg-blue-50 rounded-xl border-2 border-blue-400 p-6">
+        <div className="flex items-start gap-3">
+          <span className="text-3xl">📍</span>
+          <div>
+            <h2 className="font-bold text-blue-800 text-lg mb-2">GPS Location Tracking</h2>
+            <p className="text-blue-700 text-sm mb-3">
+              Click <strong>&quot;Show My Location&quot;</strong> above to see your current position on the map. 
+              Your phone&apos;s GPS works without internet - the blue dot shows where you are.
+            </p>
+            <div className="bg-blue-100 rounded-lg p-4 mt-3">
+              <h3 className="font-semibold text-blue-800 text-sm mb-2">⚠️ Important: Offline Use</h3>
+              <ul className="text-blue-700 text-sm space-y-1">
+                <li>• <strong>GPS positioning works offline</strong> - your location will update without internet</li>
+                <li>• <strong>Map tiles require internet</strong> - the background map won&apos;t load without signal</li>
+                <li>• <strong>For true offline navigation</strong>, use a dedicated GPS app with downloaded maps:</li>
+              </ul>
+              <div className="mt-3 grid sm:grid-cols-2 gap-2">
+                <div className="bg-white rounded p-2 text-xs">
+                  <strong>Recommended Apps:</strong>
+                  <ul className="mt-1 text-blue-600">
+                    <li>• Gaia GPS (download offline maps)</li>
+                    <li>• AllTrails (premium offline maps)</li>
+                    <li>• Avenza Maps (free offline)</li>
+                  </ul>
+                </div>
+                <div className="bg-white rounded p-2 text-xs">
+                  <strong>Before Your Hike:</strong>
+                  <ul className="mt-1 text-blue-600">
+                    <li>• Download GPX track to your app</li>
+                    <li>• Download offline map tiles</li>
+                    <li>• Test everything works without WiFi</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Map Info */}
       <div className="grid md:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl border border-slate-200 p-6">
