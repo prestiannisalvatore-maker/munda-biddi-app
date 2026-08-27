@@ -10,7 +10,8 @@ export default function ItineraryPage() {
     <div className="mx-auto max-w-3xl px-4 py-8">
       <h1 className="font-serif text-3xl text-ink">Itinerary</h1>
       <p className="mt-1 text-sm text-muted">
-        21–26 Sep 2026 · six days · ~269 km. Trains bookend the trip on Day 1 and Day 6.
+        21–25 Sep 2026 · five days · ~259 km. Trains sit on Day 1 and Day 5 —
+        not as Day 7 or Day 8.
       </p>
 
       <ul className="mt-8 space-y-5">

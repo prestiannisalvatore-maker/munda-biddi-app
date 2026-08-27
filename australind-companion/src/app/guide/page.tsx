@@ -5,7 +5,7 @@ export default function GuidePage() {
     <div className="mx-auto max-w-3xl px-4 py-8">
       <h1 className="font-serif text-3xl text-ink">Guide</h1>
       <p className="mt-1 text-sm text-muted">
-        Short notes for each of the six riding days.
+        Short notes for each of the five riding days.
       </p>
       <ul className="mt-8 space-y-4">
         {days.map((day) => (
