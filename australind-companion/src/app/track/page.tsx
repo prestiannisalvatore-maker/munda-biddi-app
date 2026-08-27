@@ -5,7 +5,7 @@ export default function TrackPage() {
     <div className="mx-auto max-w-3xl px-4 py-8">
       <h1 className="font-serif text-3xl text-ink">Track</h1>
       <p className="mt-1 text-sm text-muted">
-        Five riding days, Bunbury to Mandurah. Live GPS from the earlier
+        Six riding days, Bunbury to Mandurah. Live GPS from the earlier
         companion build is not in this source yet — use the day list below on
         the trail for now.
       </p>

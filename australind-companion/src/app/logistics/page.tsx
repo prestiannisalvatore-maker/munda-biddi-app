@@ -5,8 +5,8 @@ export default function LogisticsPage() {
     <div className="mx-auto max-w-3xl px-4 py-8">
       <h1 className="font-serif text-3xl text-ink">Logistics</h1>
       <p className="mt-1 text-sm text-muted">
-        Bookings and gates for the five riding days. The Mandurah train is the
-        same Friday as Day 5.
+        Bookings and gates for the six riding days. The Mandurah train is the
+        same Saturday as Day 6.
       </p>
       <ul className="mt-8 space-y-4">
         {logisticsGates.map((gate) => (

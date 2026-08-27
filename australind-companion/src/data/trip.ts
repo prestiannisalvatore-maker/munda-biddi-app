@@ -3,9 +3,9 @@ export const tripMeta = {
   subtitle: "Train to Bunbury · ride north to Mandurah · train home",
   riders: ["Zino Prestianni", "Sam Prestianni"],
   startDate: "2026-09-21",
-  endDate: "2026-09-25",
-  totalKm: 259.2,
-  ridingDays: 5,
+  endDate: "2026-09-26",
+  totalKm: 269,
+  ridingDays: 6,
 };
 
 export type OvernightKind = "camp" | "motel" | "home";
@@ -26,7 +26,7 @@ export interface TripDay {
   logistics?: string[];
 }
 
-/** Five calendar days. Trains are logistics on Day 1 and Day 5 — not extra DAY badges. */
+/** Six calendar days. Trains are logistics on Day 1 and Day 6 — not extra DAY badges. */
 export const days: TripDay[] = [
   {
     id: 1,
@@ -35,7 +35,7 @@ export const days: TripDay[] = [
     label: "Bunbury to Nglang Boodja Hut",
     route:
       "Bunbury Terminal → Preston River / Dardanup / Ferguson Rd → Munda Biddi → Nglang Boodja Hut",
-    distanceKm: 32.11,
+    distanceKm: 32,
     section: "DAY 1 · ONTO THE TRAIL",
     overnightKind: "camp",
     bookingStatus: "pending",
@@ -43,7 +43,7 @@ export const days: TripDay[] = [
       "Australind arrives ~midday · lunch in Bunbury · Preston River path out of town",
     amber: false,
     notes:
-      "Leave town on the Preston River path. Ferguson Rd from Dardanup joins the Munda Biddi.",
+      "Leave town on the Preston River path. Ferguson Rd from Dardanup joins the Munda Biddi. Hut has shelter, water tanks, drop toilet.",
     logistics: [
       "Morning: bike ~7 km from 32 Browning St, Yokine to Perth City Station.",
       "Transwa Australind Perth → Bunbury (bikes on hooks). Aim for midday arrival.",
@@ -55,63 +55,78 @@ export const days: TripDay[] = [
     date: "2026-09-22",
     dayOfWeek: "Tuesday",
     label: "Nglang Boodja Hut to Collie",
-    route: "Munda Biddi through to Collie",
-    distanceKm: 36.56,
+    route: "Wellington National Park → Honeymoon Pool area → Collie",
+    distanceKm: 37,
     section: "DAY 2 · INTO COLLIE",
     overnightKind: "motel",
     bookingStatus: "pending",
-    highlight: "Proper bed and resupply in Collie before the long quiet day",
+    highlight: "Technical descent near Honeymoon Pool · proper bed and resupply in Collie",
     amber: false,
-    notes: "Book Black Diamond Lodge ahead and confirm bike storage.",
+    notes: "Steep switchback descent to Collie River. Book Black Diamond Lodge ahead and confirm bike storage.",
   },
   {
     id: 3,
     date: "2026-09-23",
     dayOfWeek: "Wednesday",
-    label: "Collie to Brockman Lake Park",
-    route: "Munda Biddi via Yarri, with bitumen mixed in",
-    distanceKm: 89.71,
-    section: "DAY 3 · LONG QUIET STRETCH",
+    label: "Collie to Yarri Hut",
+    route: "Collie → Mornington Rd area → jarrah forest → Yarri Hut",
+    distanceKm: 40,
+    section: "DAY 3 · INTO THE FOREST",
     overnightKind: "camp",
     bookingStatus: "skip",
-    highlight: "Longest day · little resupply · expect a late finish",
-    amber: true,
+    highlight: "Flowing singletrack through tall jarrah and marri forest",
+    amber: false,
     notes:
-      "Leave Collie full. Pack dinner and breakfast for the bush camp. Strong lights if dusk catches you.",
+      "Leave Collie with food for two camp nights. Yarri Hut has shelter, water tanks, drop toilet. Beautiful tall forest riding.",
   },
   {
     id: 4,
     date: "2026-09-24",
     dayOfWeek: "Thursday",
-    label: "Brockman Lake to Dwellingup",
-    route: "Munda Biddi via Bidjar Ngoulin",
-    distanceKm: 56.5,
-    section: "DAY 4 · TO DWELLINGUP",
-    overnightKind: "motel",
-    bookingStatus: "pending",
-    highlight: "Cafe near Brockman Lake opens 8am — breakfast before the push",
+    label: "Yarri Hut to Lake Brockman",
+    route: "Yarri Hut → singletrack through forest → Lake Brockman",
+    distanceKm: 35,
+    section: "DAY 4 · TO LAKE BROCKMAN",
+    overnightKind: "camp",
+    bookingStatus: "skip",
+    highlight: "Pleasant forest riding · Lake Brockman has café (check hours) and swimming",
     amber: false,
-    notes: "Confirm hut/cabin booking and late-arrival options in Dwellingup.",
+    notes: "Lake Brockman has campsites, cabins and café. Swimming allowed. Check café opening hours if relying on them for food.",
   },
   {
     id: 5,
     date: "2026-09-25",
     dayOfWeek: "Friday",
+    label: "Lake Brockman to Dwellingup",
+    route: "Lake Brockman → Bidjar Ngoulin area → Lane Poole Reserve → Murray River → Dwellingup",
+    distanceKm: 56,
+    section: "DAY 5 · TO DWELLINGUP",
+    overnightKind: "motel",
+    bookingStatus: "pending",
+    highlight: "Best singletrack of the trail through Lane Poole Reserve · Murray River swimming",
+    amber: false,
+    notes: "Smooth winding singletrack beside Murray River. Suspension bridge crossing. Confirm hut/cabin booking in Dwellingup.",
+  },
+  {
+    id: 6,
+    date: "2026-09-26",
+    dayOfWeek: "Saturday",
     label: "Dwellingup to Mandurah",
     route:
-      "Dwellingup → North Spur Rd → Pinjarra → Paterson Rd → Mandurah Station, then Mandurah line to Perth",
-    distanceKm: 44.3,
-    section: "DAY 5 · OFF THE SCARP · TRAIN HOME",
+      "Dwellingup → North Spur Rd → descent off scarp → Pinjarra → Mandurah Station",
+    distanceKm: 69,
+    section: "DAY 6 · OFF THE SCARP · TRAIN HOME",
     overnightKind: "home",
     bookingStatus: "skip",
     highlight:
-      "Late-morning start. North Spur Rd downhill, lunch in Pinjarra, Mandurah line home the same evening.",
-    amber: false,
+      "Early start for longest day. North Spur Rd downhill off the scarp, lunch in Pinjarra.",
+    amber: true,
     notes:
-      "One Friday: ride off the scarp, then train home that evening. Check bike-on-train rules and the Friday timetable.",
+      "Longest day. Descend off the Darling Scarp via North Spur Rd. Mix of gravel and road to Mandurah. Train home that evening.",
     logistics: [
+      "Early start recommended for this longer day.",
       "Ride to Mandurah Station.",
-      "Transperth Mandurah line to Perth the same evening — not a separate day.",
+      "Transperth Mandurah line to Perth the same evening.",
     ],
   },
 ];
@@ -132,17 +147,17 @@ export const logisticsGates = [
     detail: "Day 2 overnight — bike-friendly bed and resupply. Book ahead.",
   },
   {
-    title: "Day 3 food & water",
+    title: "Days 3-4 food & water",
     detail:
-      "Collie → Brockman Lake is long and quiet. Leave Collie full; pack dinner/breakfast for the bush camp.",
+      "Collie → Yarri → Lake Brockman. Leave Collie full; pack food for two camp nights. Lake Brockman café available (check hours).",
   },
   {
-    title: "Dwellingup caravan park huts",
-    detail: "Day 4 overnight. Confirm hut/cabin booking and late arrival.",
+    title: "Dwellingup accommodation",
+    detail: "Day 5 overnight. Confirm hut/cabin booking and late arrival.",
   },
   {
     title: "Mandurah line home",
     detail:
-      "Same Friday as the ride — check Transperth bike-on-train rules and the evening timetable.",
+      "Saturday after Day 6 — check Transperth bike-on-train rules and the weekend timetable.",
   },
 ];

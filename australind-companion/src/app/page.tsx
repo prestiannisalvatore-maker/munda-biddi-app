@@ -4,7 +4,7 @@ const cards = [
   {
     href: "/itinerary",
     title: "Itinerary",
-    detail: "Five trail days · trains bookending the week",
+    detail: "Six trail days · trains bookending the week",
     primary: true,
   },
   {
@@ -15,7 +15,7 @@ const cards = [
   {
     href: "/logistics",
     title: "Logistics",
-    detail: "Australind, lodges, Day 3 food, offline maps",
+    detail: "Australind, lodges, Days 3-4 food, offline maps",
   },
   {
     href: "/family",
@@ -40,7 +40,7 @@ export default function HomePage() {
       <section className="relative mx-auto flex min-h-[100dvh] max-w-6xl flex-col justify-end px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(3rem,env(safe-area-inset-top))] md:justify-center md:pb-24">
         <div className="max-w-2xl">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-ocean">
-            21–25 Sep 2026 · Australind · Munda Biddi · Mandurah line
+            21–26 Sep 2026 · Australind · Munda Biddi · Mandurah line
           </p>
           <h1 className="mt-3 font-serif text-4xl leading-[1.05] text-ink sm:text-5xl md:text-6xl">
             Australind
@@ -48,7 +48,7 @@ export default function HomePage() {
             Munda Biddi
           </h1>
           <p className="mt-4 max-w-xl text-base leading-relaxed text-muted md:text-lg">
-            Train to Bunbury, five days of gravel north through hut nights and
+            Train to Bunbury, six days of gravel north through hut nights and
             quiet forest, then off the scarp to Mandurah and home by rail. Built
             for Zino & Sam — the week you keep looking at on the calendar.
           </p>
@@ -82,7 +82,7 @@ export default function HomePage() {
           </div>
         </div>
         <div className="mt-8 flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted">
-          <span className="font-medium text-ink/80">~259 km · 5 riding days</span>
+          <span className="font-medium text-ink/80">~269 km · 6 riding days</span>
           <a
             href="https://mundabiddi.org.au/pages/route-updates"
             target="_blank"
