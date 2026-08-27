@@ -1,106 +1,120 @@
 import Link from "next/link";
 
-const cards = [
-  {
-    href: "/itinerary",
-    title: "Itinerary",
-    detail: "Five trail days · trains bookending the week",
-    primary: true,
-  },
-  {
-    href: "/track",
-    title: "Track",
-    detail: "Live GPS on the Bunbury → Mandurah ride line",
-  },
-  {
-    href: "/logistics",
-    title: "Logistics",
-    detail: "Australind, lodges, Day 3 food, offline maps",
-  },
-  {
-    href: "/family",
-    title: "Share with family",
-    detail: "Check in and send them a private link",
-  },
-  {
-    href: "/emergency",
-    title: "SOS",
-    detail: "Emergency contacts on this phone",
-  },
-  {
-    href: "/more",
-    title: "More",
-    detail: "Guide, packing, journal, offline maps",
-  },
-];
-
-export default function HomePage() {
+export default function Home() {
   return (
-    <div className="topo-wash relative min-h-[100dvh] overflow-hidden">
-      <section className="relative mx-auto flex min-h-[100dvh] max-w-6xl flex-col justify-end px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(3rem,env(safe-area-inset-top))] md:justify-center md:pb-24">
-        <div className="max-w-2xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-ocean">
-            21–25 Sep 2026 · Australind · Munda Biddi · Mandurah line
+    <div
+      className="relative min-h-[calc(100vh-8rem)] -mx-4 sm:-mx-6 lg:-mx-8 -mt-8 rounded-xl overflow-hidden"
+      style={{
+        backgroundImage: "url(/zino-sam-photo.jpg)",
+        backgroundSize: "contain",
+        backgroundPosition: "left center",
+        backgroundRepeat: "no-repeat",
+        backgroundColor: "#1a2e1a",
+      }}
+    >
+      <div className="absolute inset-0 bg-black/10" aria-hidden />
+      <div className="relative z-10 flex flex-col lg:flex-row min-h-[calc(100vh-8rem)] px-4 sm:px-6 lg:px-8 py-12">
+        <div className="hidden lg:block flex-1 min-w-0" aria-hidden />
+        <div className="flex flex-col justify-center space-y-8 flex-shrink-0 w-full max-w-2xl mx-auto lg:px-4">
+      <header className="text-center space-y-4">
+        <h1 className="text-5xl sm:text-6xl md:text-7xl font-normal text-white drop-shadow-lg tracking-tight" style={{ fontFamily: "'Pacifico', cursive" }}>
+          Zino and Sam Prestianni
+        </h1>
+        <p className="text-xl text-white font-semibold drop-shadow-md">
+          Australind Munda Biddi — 21–25 Sep 2026
+        </p>
+        <p className="text-slate-100 max-w-2xl mx-auto drop-shadow-md">
+          Train to Bunbury, six days north on the Munda Biddi, then Mandurah
+          and home by rail. The May 2027 end-to-end plan is still here too.
+        </p>
+      </header>
+
+      <div className="grid sm:grid-cols-2 gap-6">
+        <Link
+          href="/australind"
+          className="block p-6 rounded-xl bg-emerald-700/80 backdrop-blur-sm border border-white/30 shadow-lg hover:shadow-xl hover:border-emerald-200 transition-all sm:col-span-2"
+        >
+          <h2 className="font-semibold text-white mb-2">Australind trip</h2>
+          <p className="text-sm text-emerald-50">
+            ~259 km · Bunbury → Nglang Boodja → Collie → Brockman Lake →
+            Dwellingup → Mandurah. Itinerary, logistics, and a link to the live
+            GPS companion.
           </p>
-          <h1 className="mt-3 font-serif text-4xl leading-[1.05] text-ink sm:text-5xl md:text-6xl">
-            Australind
-            <br />
-            Munda Biddi
-          </h1>
-          <p className="mt-4 max-w-xl text-base leading-relaxed text-muted md:text-lg">
-            Train to Bunbury, five days of gravel north through hut nights and
-            quiet forest, then off the scarp to Mandurah and home by rail. Built
-            for Zino & Sam — the week you keep looking at on the calendar.
+        </Link>
+        <Link
+          href="/map"
+          className="block p-6 rounded-xl bg-white/40 backdrop-blur-sm border border-white/30 shadow-lg hover:shadow-xl hover:border-emerald-200 transition-all"
+        >
+          <h2 className="font-semibold text-slate-800 mb-2">Trail Map</h2>
+          <p className="text-sm text-slate-600">
+            Interactive map with topography and the trail highlighted in red.
           </p>
-          <div className="mt-7 grid gap-3">
-            {cards.map((card) => (
-              <Link
-                key={card.href}
-                href={card.href}
-                className={`rounded-2xl border px-5 py-4 transition active:scale-[0.99] ${
-                  card.primary
-                    ? "border-ink bg-ink text-sand shadow-sm"
-                    : "border-line/80 bg-surface/85 text-ink backdrop-blur-sm"
-                }`}
-              >
-                <p
-                  className={`font-serif text-2xl ${
-                    card.primary ? "text-sand" : "text-ink"
-                  }`}
-                >
-                  {card.title}
-                </p>
-                <p
-                  className={`mt-1 text-sm ${
-                    card.primary ? "text-sand/80" : "text-muted"
-                  }`}
-                >
-                  {card.detail}
-                </p>
-              </Link>
-            ))}
-          </div>
+        </Link>
+        <Link
+          href="/info"
+          className="block p-6 rounded-xl bg-white/40 backdrop-blur-sm border border-white/30 shadow-lg hover:shadow-xl hover:border-emerald-200 transition-all"
+        >
+          <h2 className="font-semibold text-slate-800 mb-2">Trail Info</h2>
+          <p className="text-sm text-slate-600">
+            Comprehensive guide from the Munda Biddi Trail Guide.
+          </p>
+        </Link>
+        <Link
+          href="/distance-calculator"
+          className="block p-6 rounded-xl bg-white/40 backdrop-blur-sm border border-white/30 shadow-lg hover:shadow-xl hover:border-emerald-200 transition-all"
+        >
+          <h2 className="font-semibold text-slate-800 mb-2">Distance Calculator</h2>
+          <p className="text-sm text-slate-600">
+            Calculate distances between campsites and towns.
+          </p>
+        </Link>
+        <Link
+          href="/schedule"
+          className="block p-6 rounded-xl bg-white/40 backdrop-blur-sm border border-white/30 shadow-lg hover:shadow-xl hover:border-emerald-200 transition-all"
+        >
+          <h2 className="font-semibold text-slate-800 mb-2">Schedule</h2>
+          <p className="text-sm text-slate-600">
+            Day-by-day plan with km, times, and accommodation.
+          </p>
+        </Link>
+        <Link
+          href="/calendar"
+          className="block p-6 rounded-xl bg-white/40 backdrop-blur-sm border border-white/30 shadow-lg hover:shadow-xl hover:border-emerald-200 transition-all"
+        >
+          <h2 className="font-semibold text-slate-800 mb-2">Calendar</h2>
+          <p className="text-sm text-slate-600">
+            View your trip on a calendar.
+          </p>
+        </Link>
+        <Link
+          href="/checklist"
+          className="block p-6 rounded-xl bg-white/40 backdrop-blur-sm border border-white/30 shadow-lg hover:shadow-xl hover:border-emerald-200 transition-all"
+        >
+          <h2 className="font-semibold text-slate-800 mb-2">Checklist</h2>
+          <p className="text-sm text-slate-600">
+            Gear and planning checklist with tick boxes.
+          </p>
+        </Link>
+      </div>
+
+      <div className="rounded-xl bg-white/40 backdrop-blur-sm border border-white/30 p-6">
+        <h3 className="font-semibold text-emerald-800 mb-2">Quick Facts</h3>
+        <ul className="text-sm text-emerald-900 space-y-1">
+          <li>• Australind trip: ~259 km · 5 riding days · 21–25 Sep 2026</li>
+          <li>• Route: Australind train → Bunbury → Mandurah line home</li>
+          <li>• Hut, lodge, bush camp, and caravan-park hut nights</li>
+          <li>• End-to-end (Mundaring–Albany) still available in Trip</li>
+        </ul>
+      </div>
         </div>
-        <div className="mt-8 flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted">
-          <span className="font-medium text-ink/80">~259 km · 5 riding days</span>
-          <a
-            href="https://mundabiddi.org.au/pages/route-updates"
-            target="_blank"
-            rel="noreferrer"
-            className="font-medium text-ocean underline-offset-2 hover:underline"
-          >
-            Route updates
-          </a>
-          <a
-            href="https://www.transwa.wa.gov.au/"
-            target="_blank"
-            rel="noreferrer"
-            className="font-medium text-ocean underline-offset-2 hover:underline"
-          >
-            Transwa Australind
-          </a>
+        <div className="flex-1 min-w-[280px] flex items-stretch">
+          <img
+            src="/hero-photo.jpg"
+            alt="Cycling on Munda Biddi Trail"
+            className="rounded-xl shadow-xl object-cover w-full h-full min-h-[350px]"
+          />
         </div>
-      </section>
+      </div>
     </div>
   );
 }

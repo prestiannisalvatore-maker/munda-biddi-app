@@ -1,17 +1,23 @@
 {
-  "name": "australind-munda-biddi",
-  "version": "1.0.0",
+  "name": "munda-biddi-app",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3000",
+    "dev": "next dev -p 3002 --turbo",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "start": "next start -p 3002",
+    "lint": "next lint",
+    "fresh": "rm -rf .next node_modules/.cache && npm run build && npm run start",
+    "restart": "lsof -ti:3002 | xargs kill -9 2>/dev/null; sleep 2; npm run start"
   },
   "dependencies": {
+    "@types/leaflet": "^1.9.21",
+    "date-fns": "^4.1.0",
+    "leaflet": "^1.9.4",
     "next": "14.2.21",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-leaflet": "^4.2.1"
   },
   "devDependencies": {
     "@types/node": "^20",

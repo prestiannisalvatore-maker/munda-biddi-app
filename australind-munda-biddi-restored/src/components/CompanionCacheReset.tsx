@@ -2,12 +2,19 @@
 
 import { useEffect } from "react";
 
-const OLD_KEYS = ["australind-munda-v1", "australind-munda-shell-v1"];
+/** Old live companion keys that still showed Day 7 & 8 after a redeploy. */
+const OLD_KEYS = [
+  "australind-munda-v1",
+  "australind-munda-shell-v1",
+  "munda-biddi-emergency",
+];
 
-export default function CacheReset() {
+export default function CompanionCacheReset() {
   useEffect(() => {
     try {
-      for (const key of OLD_KEYS) localStorage.removeItem(key);
+      for (const key of OLD_KEYS) {
+        localStorage.removeItem(key);
+      }
     } catch {
       /* ignore */
     }

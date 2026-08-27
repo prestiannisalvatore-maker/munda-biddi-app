@@ -1,29 +1,70 @@
-# Australind Munda Biddi
+# Zino and Sam Prestianni — Munda Biddi planning
 
-Shorter trip companion for Zino & Sam: **train to Bunbury, five days north on the Munda Biddi, Mandurah line home** (21–25 Sep 2026, ~259 km).
+A web application for planning Munda Biddi rides.
 
-This is **not** the Mundaring → Albany end-to-end planner (`munda-biddi-app`).
+## Australind trip (21–25 Sep 2026)
 
-## Itinerary
+The trip you keep looking for: **train to Bunbury, six days north on the Munda Biddi, Mandurah line home** (~259 km).
 
-Five calendar days only:
+- In this app: [Days itinerary](/itinerary) — five cards only (21–25 Sep 2026). Friday is one day: ride to Mandurah, then train home.
 
-1. Mon 21 Sep — Bunbury → Nglang Boodja Hut (Yokine bike + Australind train that morning)
-2. Tue 22 Sep — Hut → Collie
-3. Wed 23 Sep — Collie → Brockman Lake
-4. Thu 24 Sep — Brockman → Dwellingup
-5. Fri 25 Sep — Dwellingup → Mandurah, then train home **the same evening**
+Use the **Trip** switcher in the header to flip between this Australind week and the May 2027 Mundaring–Albany end-to-end plan.
 
-There is no Day 6, 7, or 8.
+## Features
 
-## Deploy
+- **Australind Trip** — 21–25 Sep 2026 Bunbury → Mandurah itinerary and logistics
+- **Trail Map** — Interactive map with OpenTopoMap (topography/contour lines), trail highlighted in red
+- **Trail Info** — Content from the Munda Biddi Trail Guide PDF
+- **Distance Calculator** — Calculate distances between campsites and towns (like mundabiddi.org.au)
+- **Schedule** — Day-by-day plan with km, cumulative total, start/lunch/finish times, accommodation suggestions
+- **Calendar** — Trip displayed on a calendar
+- **Checklist** — Gear and planning checklist with tick boxes (saved in browser)
 
-This folder lives in the `munda-biddi-app` GitHub repo so it can be pushed. It is still a **separate Vercel app**.
+- **Trail Map** — Interactive map with OpenTopoMap (topography/contour lines), trail highlighted in red
+- **Trail Info** — Content from the Munda Biddi Trail Guide PDF
+- **Distance Calculator** — Calculate distances between campsites and towns (like mundabiddi.org.au)
+- **Schedule** — Day-by-day plan with km, cumulative total, start/lunch/finish times, accommodation suggestions
+- **Calendar** — Trip displayed on a calendar
+- **Checklist** — Gear and planning checklist with tick boxes (saved in browser)
 
-On Vercel project **australind-munda-biddi**:
+## Run Locally
 
-1. Settings → Git → connect **munda-biddi-app**
-2. Settings → General → **Root Directory** → `australind-companion`
-3. Deploy
+```bash
+npm install --legacy-peer-deps
+npm run dev
+```
 
-The May 2027 end-to-end planner stays at the repo root and is a different Vercel project.
+Open [http://localhost:3001](http://localhost:3001).
+
+## Deploy to the Internet
+
+### Vercel (recommended, free)
+
+1. Push this project to GitHub
+2. Go to [vercel.com](https://vercel.com) and sign in with GitHub
+3. Import the repository
+4. Deploy — your app will be live at `your-project.vercel.app`
+
+### Netlify
+
+1. Push to GitHub
+2. Go to [netlify.com](https://netlify.com) → Add new site → Import from Git
+3. Build command: `npm run build`
+4. Publish directory: `.next` (or use Next.js runtime)
+
+### Other options
+
+- **Railway**, **Render**, **Fly.io** — all support Next.js
+- **Self-hosted** — `npm run build && npm run start` on a VPS
+
+## Data Sources
+
+- Trail distances: [mundabiddi.org.au/pages/trail-distances](https://mundabiddi.org.au/pages/trail-distances)
+- Trail guide: Munda Biddi Trail Guide PDF
+- KML: `munda_biddi_trail.kml` (trail coordinates)
+
+## Customisation
+
+- **Campsites**: Edit `src/data/trailData.ts` or add a JSON file and load it
+- **Schedule**: Edit `src/data/scheduleData.ts` for dates and accommodation
+- **Checklist**: Edit `src/data/checklistData.ts`
