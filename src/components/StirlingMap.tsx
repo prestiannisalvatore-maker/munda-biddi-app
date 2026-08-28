@@ -210,9 +210,9 @@ export default function StirlingMap() {
 
     const map = L.map(mapRef.current, {
       center: [-34.355, 118.31],
-      zoom: 12,
+      zoom: 13,
       layers: [topoLayer],
-      minZoom: 10,
+      minZoom: 12,
       maxZoom: 17,
     });
 
@@ -227,17 +227,17 @@ export default function StirlingMap() {
 
     const trailLine = L.polyline(trailCoords, {
       color: "#ea580c",
-      weight: 4,
-      opacity: 0.9,
+      weight: 5,
+      opacity: 0.95,
     }).addTo(map);
 
     const bounds = trailLine.getBounds();
-    map.fitBounds(bounds, { padding: [30, 30] });
+    map.fitBounds(bounds, { padding: [20, 20] });
 
     const sw = bounds.getSouthWest();
     const ne = bounds.getNorthEast();
-    const padLat = (ne.lat - sw.lat) * 0.3;
-    const padLng = (ne.lng - sw.lng) * 0.3;
+    const padLat = (ne.lat - sw.lat) * 0.15;
+    const padLng = (ne.lng - sw.lng) * 0.15;
     map.setMaxBounds(
       L.latLngBounds(
         L.latLng(sw.lat - padLat, sw.lng - padLng),
