@@ -54,6 +54,44 @@ export default function MapPage() {
 
       <StirlingMap />
 
+      {/* Manual navigation / triangulation guide */}
+      <div className="bg-indigo-50 rounded-xl border-2 border-indigo-400 p-6">
+        <div className="flex items-start gap-3">
+          <span className="text-3xl">📐</span>
+          <div className="flex-1">
+            <h2 className="font-bold text-indigo-900 text-lg mb-2">
+              Manual Navigation — Find Yourself Without GPS
+            </h2>
+            <p className="text-indigo-800 text-sm mb-4">
+              If your phone GPS fails, use the <strong>Find me</strong> button on the map above.
+              Sight two peaks with the compass, enter the bearings, and the app draws two lines
+              on the map. Where they cross is your approximate position.
+            </p>
+            <div className="grid sm:grid-cols-2 gap-3 text-sm">
+              <div className="bg-white rounded-lg p-3 border border-indigo-200">
+                <p className="font-semibold text-indigo-800 mb-1">On the trail</p>
+                <ol className="list-decimal pl-4 text-indigo-700 space-y-1 text-xs">
+                  <li>Identify two visible peaks (e.g. Bluff Knoll + Ellen Peak)</li>
+                  <li>Open Compass → point at peak 1 → note the bearing</li>
+                  <li>Tap <strong>Find me</strong> → enter peak + bearing</li>
+                  <li>Repeat for peak 2 → tap Draw lines</li>
+                  <li>Pink marker = where you are</li>
+                </ol>
+              </div>
+              <div className="bg-white rounded-lg p-3 border border-indigo-200">
+                <p className="font-semibold text-indigo-800 mb-1">For best accuracy</p>
+                <ul className="text-indigo-700 space-y-1 text-xs">
+                  <li>• Choose peaks that are well apart in direction (aim for ~90° between bearings)</li>
+                  <li>• Hold the compass flat and steady when sighting</li>
+                  <li>• Cross-check against the orange trail line</li>
+                  <li>• Use a third peak if the cross looks uncertain</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Mapbox 3D Satellite Preview */}
       <section className="space-y-3">
         <div>

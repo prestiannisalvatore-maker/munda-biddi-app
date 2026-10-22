@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import L from "leaflet";
 import { peaks, campsites, routeCoordinates, trailInfo } from "@/data/stirlingRidgeData";
 import MapCompass from "./MapCompass";
+import TriangulationPanel, { type Sighting } from "./TriangulationPanel";
+import { lineOfPosition, intersectLines } from "@/lib/geo";
 
 delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -66,6 +68,12 @@ export default function StirlingMap() {
   const [showCamps, setShowCamps] = useState(true);
   const [showCompass, setShowCompass] = useState(false);
   const [showNorthLines, setShowNorthLines] = useState(true);
+  const [showTriangulate, setShowTriangulate] = useState(false);
+  const [triStep, setTriStep] = useState<1 | 2 | 3 | 4>(1);
+  const [sighting1, setSighting1] = useState<Sighting | null>(null);
+  const [sighting2, setSighting2] = useState<Sighting | null>(null);
+  const [triResult, setTriResult] = useState<{ lat: number; lng: number } | null>(null);
+  const [deviceHeading, setDeviceHeading] = useState<number | null>(null);
   const [locationStatus, setLocationStatus] = useState<LocationStatus>("idle");
   const [locationError, setLocationError] = useState<string | null>(null);
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
@@ -76,10 +84,115 @@ export default function StirlingMap() {
   const accuracyCircleRef = useRef<L.Circle | null>(null);
   const watchIdRef = useRef<number | null>(null);
   const northLinesLayerRef = useRef<L.LayerGroup | null>(null);
+  const triLayerRef = useRef<L.LayerGroup | null>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Device heading for triangulation bearing helper
+  useEffect(() => {
+    const onOrient = (event: DeviceOrientationEvent) => {
+      if (event.alpha === null) return;
+      const heading =
+        (event as DeviceOrientationEvent & { webkitCompassHeading?: number })
+          .webkitCompassHeading ?? 360 - event.alpha;
+      setDeviceHeading(heading);
+    };
+    if (typeof window !== "undefined" && "DeviceOrientationEvent" in window) {
+      window.addEventListener("deviceorientation", onOrient, true);
+    }
+    return () => window.removeEventListener("deviceorientation", onOrient, true);
+  }, []);
+
+  const clearTriangulation = useCallback(() => {
+    const map = mapInstanceRef.current;
+    if (triLayerRef.current && map) {
+      map.removeLayer(triLayerRef.current);
+      triLayerRef.current = null;
+    }
+    setTriResult(null);
+  }, []);
+
+  const plotTriangulation = useCallback(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !sighting1 || !sighting2) return;
+
+    clearTriangulation();
+
+    const p1 = peaks.find((p) => p.id === sighting1.peakId);
+    const p2 = peaks.find((p) => p.id === sighting2.peakId);
+    if (!p1 || !p2) return;
+
+    const [a1, a2] = lineOfPosition(p1.lat, p1.lng, sighting1.bearing);
+    const [b1, b2] = lineOfPosition(p2.lat, p2.lng, sighting2.bearing);
+    const cross = intersectLines(a1, a2, b1, b2);
+
+    const group = L.layerGroup();
+
+    L.polyline([a1, a2], {
+      color: "#7c3aed",
+      weight: 3,
+      opacity: 0.85,
+      dashArray: "8 6",
+    }).addTo(group);
+
+    L.polyline([b1, b2], {
+      color: "#0d9488",
+      weight: 3,
+      opacity: 0.85,
+      dashArray: "8 6",
+    }).addTo(group);
+
+    // Landmark dots
+    L.circleMarker([p1.lat, p1.lng], {
+      radius: 7,
+      color: "#7c3aed",
+      fillColor: "#a78bfa",
+      fillOpacity: 1,
+      weight: 2,
+    })
+      .bindTooltip(`Sight 1: ${p1.name} @ ${Math.round(sighting1.bearing)}°`, { permanent: false })
+      .addTo(group);
+
+    L.circleMarker([p2.lat, p2.lng], {
+      radius: 7,
+      color: "#0d9488",
+      fillColor: "#5eead4",
+      fillOpacity: 1,
+      weight: 2,
+    })
+      .bindTooltip(`Sight 2: ${p2.name} @ ${Math.round(sighting2.bearing)}°`, { permanent: false })
+      .addTo(group);
+
+    if (cross) {
+      const [lat, lng] = cross;
+      setTriResult({ lat, lng });
+
+      const youIcon = L.divIcon({
+        className: "tri-position",
+        html: `<div style="display:flex;flex-direction:column;align-items:center;">
+          <div style="width:22px;height:22px;background:#ec4899;border:3px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.45);"></div>
+          <span style="margin-top:2px;font-size:10px;font-weight:800;color:#9d174d;background:rgba(255,255,255,0.95);padding:1px 5px;border-radius:4px;white-space:nowrap;">YOU ≈ here</span>
+        </div>`,
+        iconSize: [80, 40],
+        iconAnchor: [40, 11],
+      });
+
+      L.marker([lat, lng], { icon: youIcon })
+        .bindPopup(
+          `<strong>Estimated position</strong><br/>From compass triangulation<br/>${Math.abs(lat).toFixed(5)}°S, ${lng.toFixed(5)}°E`
+        )
+        .addTo(group);
+
+      map.fitBounds(L.latLngBounds([a1, a2, b1, b2, [lat, lng]]), { padding: [40, 40] });
+    } else {
+      setTriResult(null);
+    }
+
+    group.addTo(map);
+    triLayerRef.current = group;
+  }, [sighting1, sighting2, clearTriangulation]);
 
   const updateUserLocation = useCallback((position: GeolocationPosition) => {
     const { latitude, longitude, accuracy } = position.coords;
@@ -491,8 +604,51 @@ export default function StirlingMap() {
           >
             <span>🧭</span> Compass
           </button>
+
+          {/* Triangulation Toggle */}
+          <button
+            onClick={() => {
+              const next = !showTriangulate;
+              setShowTriangulate(next);
+              if (next) {
+                setShowNorthLines(true);
+                setShowPeaks(true);
+                setTriStep(1);
+              }
+            }}
+            className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+              showTriangulate
+                ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                : "bg-indigo-100 text-indigo-700 hover:bg-indigo-200"
+            }`}
+            title="Find your position by sighting two peaks"
+          >
+            <span>📐</span> Find me
+          </button>
         </div>
       </div>
+
+      {showTriangulate && (
+        <TriangulationPanel
+          step={triStep}
+          sighting1={sighting1}
+          sighting2={sighting2}
+          result={triResult}
+          onStepChange={setTriStep}
+          onSighting1Change={setSighting1}
+          onSighting2Change={setSighting2}
+          onPlot={plotTriangulation}
+          onClear={() => {
+            clearTriangulation();
+            setSighting1(null);
+            setSighting2(null);
+          }}
+          onClose={() => {
+            setShowTriangulate(false);
+          }}
+          deviceHeading={deviceHeading}
+        />
+      )}
 
       {locationError && (
         <div className="bg-red-50 px-4 py-2 border-b border-red-200 text-sm text-red-700">
@@ -548,6 +704,22 @@ export default function StirlingMap() {
             <span className="w-0.5 h-4 bg-red-500" />
             <span className="text-red-600 font-medium">N▲ North lines</span>
           </span>
+        )}
+        {triResult && (
+          <>
+            <span className="flex items-center gap-2">
+              <span className="w-4 h-0.5 bg-violet-600" style={{ borderTop: "2px dashed #7c3aed" }} />
+              Bearing line 1
+            </span>
+            <span className="flex items-center gap-2">
+              <span className="w-4 h-0.5 bg-teal-600" />
+              Bearing line 2
+            </span>
+            <span className="flex items-center gap-2">
+              <span className="w-3 h-3 bg-pink-500 rounded-full border-2 border-white shadow" />
+              Estimated position
+            </span>
+          </>
         )}
         {locationStatus === "tracking" && (
           <span className="flex items-center gap-2">
