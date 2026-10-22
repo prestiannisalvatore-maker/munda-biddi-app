@@ -10,6 +10,10 @@ const StirlingMap = dynamic(() => import("@/components/StirlingMap"), {
   ),
 });
 
+const OfflineManager = dynamic(() => import("@/components/OfflineManager"), {
+  ssr: false,
+});
+
 export default function MapPage() {
   return (
     <div className="space-y-6">
@@ -155,6 +159,9 @@ export default function MapPage() {
           Source: Ride With GPS - 1,514 track points recorded over the full route
         </p>
       </div>
+
+      {/* Offline Mode Setup */}
+      <OfflineManager />
 
       {/* Additional Navigation Resources */}
       <div className="bg-green-50 rounded-xl border-2 border-green-400 p-6">

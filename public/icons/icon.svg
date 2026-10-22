@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="64" fill="#b45309"/>
+  <path d="M256 120 L400 350 L112 350 Z" fill="#ffffff" opacity="0.9"/>
+  <path d="M180 200 L280 350 L80 350 Z" fill="#ffffff" opacity="0.7"/>
+  <path d="M256 120 L290 180 L256 160 L222 180 Z" fill="#fef3c7"/>
+  <text x="256" y="420" text-anchor="middle" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#ffffff">STIRLING</text>
+</svg>

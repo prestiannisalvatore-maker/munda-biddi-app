@@ -15,6 +15,7 @@
     "date-fns": "^4.1.0",
     "leaflet": "^1.9.4",
     "next": "14.2.21",
+    "next-pwa": "^5.6.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-leaflet": "^4.2.1"
@@ -27,6 +28,7 @@
     "eslint": "^8",
     "eslint-config-next": "14.2.18",
     "postcss": "^8",
+    "sharp": "^0.35.5",
     "tailwindcss": "^3.4.1",
     "typescript": "^5",
     "vercel": "^59.5.0"
