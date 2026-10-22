@@ -21,6 +21,7 @@ export default function MapCompass({
   const [hasDeviceOrientation, setHasDeviceOrientation] = useState(false);
   const [isCalibrating, setIsCalibrating] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const [customDeclination, setCustomDeclination] = useState(magneticDeclination);
   const compassRef = useRef<HTMLDivElement>(null);
 
@@ -196,10 +197,20 @@ export default function MapCompass({
 
         {/* Settings button */}
         <button
-          onClick={() => setShowSettings(!showSettings)}
+          onClick={() => { setShowSettings(!showSettings); setShowHelp(false); }}
           className="compass-control absolute -top-2 left-0 w-6 h-6 bg-slate-600 text-white rounded-full text-xs hover:bg-slate-700 z-10 flex items-center justify-center shadow-lg"
         >
           ⚙
+        </button>
+
+        {/* Help button */}
+        <button
+          onClick={() => { setShowHelp(!showHelp); setShowSettings(false); }}
+          className={`compass-control absolute -top-2 left-8 w-6 h-6 rounded-full text-xs font-bold z-10 flex items-center justify-center shadow-lg ${
+            showHelp ? "bg-amber-500 text-white" : "bg-amber-100 text-amber-700 hover:bg-amber-200"
+          }`}
+        >
+          ?
         </button>
 
         {/* Settings Panel */}
@@ -232,6 +243,92 @@ export default function MapCompass({
                 </button>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Help Panel - Navigation Instructions */}
+        {showHelp && (
+          <div className="compass-control absolute -top-2 left-16 bg-white rounded-xl shadow-2xl p-4 w-72 border-2 border-amber-400 z-20">
+            <h4 className="font-bold text-amber-800 mb-3 flex items-center gap-2">
+              <span>🧭</span> How to Navigate
+            </h4>
+            
+            <div className="space-y-4 text-xs">
+              {/* Step 1 */}
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold">1</div>
+                <div>
+                  <p className="font-semibold text-slate-700">Find Your Location</p>
+                  <p className="text-slate-500">Place compass on map where you are (use GPS blue dot)</p>
+                </div>
+              </div>
+
+              {/* Step 2 */}
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold">2</div>
+                <div>
+                  <p className="font-semibold text-slate-700">Point to Destination</p>
+                  <p className="text-slate-500">Align the direction arrow (↑) toward where you want to go</p>
+                </div>
+              </div>
+
+              {/* Step 3 */}
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold">3</div>
+                <div>
+                  <p className="font-semibold text-slate-700">Rotate the Bezel</p>
+                  <p className="text-slate-500">Use ↺ ↻ buttons until the red N aligns with map north (top)</p>
+                </div>
+              </div>
+
+              {/* Step 4 */}
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold">4</div>
+                <div>
+                  <p className="font-semibold text-slate-700">Read Your Bearing</p>
+                  <p className="text-slate-500">The bezel number at the index line is your bearing (e.g., 45° = NE)</p>
+                </div>
+              </div>
+
+              {/* Step 5 */}
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center font-bold">5</div>
+                <div>
+                  <p className="font-semibold text-slate-700">Walk!</p>
+                  <p className="text-slate-500">Hold phone flat, turn until red needle points to N on bezel, then walk in arrow direction</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Reference */}
+            <div className="mt-4 pt-3 border-t border-slate-200">
+              <p className="text-[10px] text-slate-400 font-medium mb-1">QUICK REFERENCE</p>
+              <div className="grid grid-cols-4 gap-1 text-center text-[10px]">
+                <div className="bg-slate-100 rounded p-1">
+                  <div className="font-bold text-slate-700">0°</div>
+                  <div className="text-slate-500">N</div>
+                </div>
+                <div className="bg-slate-100 rounded p-1">
+                  <div className="font-bold text-slate-700">90°</div>
+                  <div className="text-slate-500">E</div>
+                </div>
+                <div className="bg-slate-100 rounded p-1">
+                  <div className="font-bold text-slate-700">180°</div>
+                  <div className="text-slate-500">S</div>
+                </div>
+                <div className="bg-slate-100 rounded p-1">
+                  <div className="font-bold text-slate-700">270°</div>
+                  <div className="text-slate-500">W</div>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowHelp(false)}
+              className="mt-3 w-full py-2 bg-amber-500 text-white rounded-lg font-semibold text-sm hover:bg-amber-600"
+            >
+              Got it!
+            </button>
           </div>
         )}
 
@@ -419,8 +516,7 @@ export default function MapCompass({
 
           {/* Instructions */}
           <div className="mt-2 text-[8px] text-slate-500 text-center leading-tight">
-            <p><strong>Drag</strong> to move • <strong>↺↻</strong> to rotate bezel</p>
-            <p>Align orienting lines with map grid north</p>
+            <p><strong>Drag</strong> to move • <strong>↺↻</strong> rotate bezel • <strong className="text-amber-600">?</strong> for help</p>
           </div>
         </div>
       </div>
