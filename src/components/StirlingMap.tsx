@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import L from "leaflet";
 import { peaks, campsites, routeCoordinates, trailInfo } from "@/data/stirlingRidgeData";
+import MapCompass from "./MapCompass";
 
 delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -63,6 +64,8 @@ export default function StirlingMap() {
   const [loading, setLoading] = useState(true);
   const [showPeaks, setShowPeaks] = useState(true);
   const [showCamps, setShowCamps] = useState(true);
+  const [showCompass, setShowCompass] = useState(false);
+  const [mapScale, setMapScale] = useState(10);
   const [locationStatus, setLocationStatus] = useState<LocationStatus>("idle");
   const [locationError, setLocationError] = useState<string | null>(null);
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
@@ -269,7 +272,20 @@ export default function StirlingMap() {
     mapInstanceRef.current = map;
     setLoading(false);
 
+    // Calculate map scale (meters per pixel) based on zoom level
+    const updateMapScale = () => {
+      const zoom = map.getZoom();
+      const center = map.getCenter();
+      // Approximate meters per pixel at given latitude and zoom
+      const metersPerPixel = 156543.03392 * Math.cos(center.lat * Math.PI / 180) / Math.pow(2, zoom);
+      setMapScale(Math.round(metersPerPixel * 50)); // Scale for 50px ruler segment
+    };
+    
+    map.on("zoomend", updateMapScale);
+    updateMapScale();
+
     return () => {
+      map.off("zoomend", updateMapScale);
       map.remove();
       mapInstanceRef.current = null;
     };
@@ -363,6 +379,19 @@ export default function StirlingMap() {
               <span>⚠️</span> Retry Location
             </button>
           )}
+          
+          {/* Compass Toggle */}
+          <button
+            onClick={() => setShowCompass(!showCompass)}
+            className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+              showCompass 
+                ? "bg-amber-600 text-white hover:bg-amber-700" 
+                : "bg-amber-100 text-amber-700 hover:bg-amber-200"
+            }`}
+            title="Toggle orienteering compass"
+          >
+            <span>🧭</span> Compass
+          </button>
         </div>
       </div>
 
@@ -387,6 +416,15 @@ export default function StirlingMap() {
           <div className="absolute inset-0 flex items-center justify-center bg-slate-100 z-[1000]">
             <span className="text-slate-500">Loading map...</span>
           </div>
+        )}
+        
+        {/* Orienteering Compass Overlay */}
+        {showCompass && (
+          <MapCompass
+            mapScale={mapScale}
+            magneticDeclination={1.5}
+            onClose={() => setShowCompass(false)}
+          />
         )}
       </div>
 
