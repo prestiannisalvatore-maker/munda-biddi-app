@@ -65,7 +65,6 @@ export default function StirlingMap() {
   const [showPeaks, setShowPeaks] = useState(true);
   const [showCamps, setShowCamps] = useState(true);
   const [showCompass, setShowCompass] = useState(false);
-  const [mapScale, setMapScale] = useState(10);
   const [locationStatus, setLocationStatus] = useState<LocationStatus>("idle");
   const [locationError, setLocationError] = useState<string | null>(null);
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
@@ -272,20 +271,7 @@ export default function StirlingMap() {
     mapInstanceRef.current = map;
     setLoading(false);
 
-    // Calculate map scale (meters per pixel) based on zoom level
-    const updateMapScale = () => {
-      const zoom = map.getZoom();
-      const center = map.getCenter();
-      // Approximate meters per pixel at given latitude and zoom
-      const metersPerPixel = 156543.03392 * Math.cos(center.lat * Math.PI / 180) / Math.pow(2, zoom);
-      setMapScale(Math.round(metersPerPixel * 50)); // Scale for 50px ruler segment
-    };
-    
-    map.on("zoomend", updateMapScale);
-    updateMapScale();
-
     return () => {
-      map.off("zoomend", updateMapScale);
       map.remove();
       mapInstanceRef.current = null;
     };
@@ -421,7 +407,6 @@ export default function StirlingMap() {
         {/* Orienteering Compass Overlay */}
         {showCompass && (
           <MapCompass
-            mapScale={mapScale}
             magneticDeclination={1.5}
             onClose={() => setShowCompass(false)}
           />
