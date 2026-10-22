@@ -406,7 +406,7 @@ export default function StirlingMap() {
           weight: 1.5,
           opacity: 0.45,
           interactive: false,
-          dashArray: undefined,
+          dashArray: "6 8",
         }
       ).addTo(northGroup);
 
@@ -435,6 +435,7 @@ export default function StirlingMap() {
           weight: 0.75,
           opacity: 0.2,
           interactive: false,
+          dashArray: "4 6",
         }
       ).addTo(northGroup);
     }
