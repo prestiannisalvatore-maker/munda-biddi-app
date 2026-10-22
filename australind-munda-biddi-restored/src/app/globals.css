@@ -1,0 +1,21 @@
+@import "leaflet/dist/leaflet.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom map markers - no default icon background */
+.leaflet-div-icon.tent-marker,
+.leaflet-div-icon.town-marker {
+  background: none !important;
+  border: none !important;
+}
+
+/* Hide scrollbar for nav overflow */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
