@@ -21,8 +21,18 @@ Your code is already pushed to GitHub. Make sure the PR is merged or deploy dire
    - Framework: **Next.js** (auto-detected)
    - Root Directory: `.`
    - Build Command: `npm run build`
-7. Click **Deploy**
-8. Wait 1–2 minutes for the build to finish
+7. **Before Deploy**, open **Environment Variables** and add:
+   - Name: `NEXT_PUBLIC_MAPBOX_TOKEN`
+   - Value: your Mapbox public token (`pk.…` from [mapbox.com](https://account.mapbox.com/access-tokens/))
+   - Environments: Production, Preview, Development
+8. Click **Deploy**
+9. Wait 1–2 minutes for the build to finish
+
+### Mapbox 3D preview (required for satellite terrain)
+
+Without `NEXT_PUBLIC_MAPBOX_TOKEN`, the 2D map still works; the 3D satellite preview shows setup instructions instead.
+
+**Add or update the token later:** Vercel → Project → Settings → Environment Variables → `NEXT_PUBLIC_MAPBOX_TOKEN` → Redeploy.
 
 ### Step 3: Your app is live!
 
