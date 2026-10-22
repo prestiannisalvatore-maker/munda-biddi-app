@@ -702,7 +702,10 @@ export default function StirlingMap() {
         </span>
         {showNorthLines && (
           <span className="flex items-center gap-2">
-            <span className="w-0.5 h-4 bg-red-500" />
+            <span
+              className="w-4 h-0 border-t-2 border-dashed border-red-500"
+              aria-hidden
+            />
             <span className="text-red-600 font-medium">N▲ North lines</span>
           </span>
         )}
