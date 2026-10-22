@@ -65,6 +65,7 @@ export default function StirlingMap() {
   const [showPeaks, setShowPeaks] = useState(true);
   const [showCamps, setShowCamps] = useState(true);
   const [showCompass, setShowCompass] = useState(false);
+  const [showNorthLines, setShowNorthLines] = useState(true);
   const [locationStatus, setLocationStatus] = useState<LocationStatus>("idle");
   const [locationError, setLocationError] = useState<string | null>(null);
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
@@ -74,6 +75,7 @@ export default function StirlingMap() {
   const userMarkerRef = useRef<L.Marker | null>(null);
   const accuracyCircleRef = useRef<L.Circle | null>(null);
   const watchIdRef = useRef<number | null>(null);
+  const northLinesLayerRef = useRef<L.LayerGroup | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -268,14 +270,92 @@ export default function StirlingMap() {
     });
     campMarkersRef.current = campMarkers;
 
+    // North-south orienteering grid lines (map north = top)
+    const gridBounds = map.getBounds().pad(0.35);
+    const south = gridBounds.getSouth();
+    const north = gridBounds.getNorth();
+    const west = gridBounds.getWest();
+    const east = gridBounds.getEast();
+    const lngSpan = east - west;
+    // ~12–16 parallel north lines across the map
+    const step = lngSpan / 14;
+
+    const northGroup = L.layerGroup();
+    for (let lng = west; lng <= east + step * 0.01; lng += step) {
+      // North-south meridian line
+      L.polyline(
+        [
+          [south, lng],
+          [north, lng],
+        ],
+        {
+          color: "#dc2626",
+          weight: 1.5,
+          opacity: 0.45,
+          interactive: false,
+          dashArray: undefined,
+        }
+      ).addTo(northGroup);
+
+      // North arrow tip near top of each line
+      L.marker([north - (north - south) * 0.02, lng], {
+        interactive: false,
+        icon: L.divIcon({
+          className: "north-arrow",
+          html: `<div style="color:#dc2626;font-size:10px;font-weight:800;text-shadow:0 0 3px white,0 0 3px white;transform:translate(-50%,-50%);">N▲</div>`,
+          iconSize: [24, 14],
+          iconAnchor: [12, 7],
+        }),
+      }).addTo(northGroup);
+    }
+
+    // Lighter east-west lines for a full orienteering grid
+    const latStep = (north - south) / 10;
+    for (let lat = south; lat <= north + latStep * 0.01; lat += latStep) {
+      L.polyline(
+        [
+          [lat, west],
+          [lat, east],
+        ],
+        {
+          color: "#dc2626",
+          weight: 0.75,
+          opacity: 0.2,
+          interactive: false,
+        }
+      ).addTo(northGroup);
+    }
+
+    northGroup.addTo(map);
+    northLinesLayerRef.current = northGroup;
+
     mapInstanceRef.current = map;
     setLoading(false);
 
     return () => {
       map.remove();
       mapInstanceRef.current = null;
+      northLinesLayerRef.current = null;
     };
   }, [mounted]);
+
+  // Toggle north grid lines
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    const layer = northLinesLayerRef.current;
+    if (!map || !layer) return;
+
+    if (showNorthLines) {
+      if (!map.hasLayer(layer)) layer.addTo(map);
+    } else {
+      if (map.hasLayer(layer)) map.removeLayer(layer);
+    }
+  }, [showNorthLines]);
+
+  // Auto-show north lines when compass opens
+  useEffect(() => {
+    if (showCompass) setShowNorthLines(true);
+  }, [showCompass]);
 
   useEffect(() => {
     const map = mapInstanceRef.current;
@@ -324,6 +404,15 @@ export default function StirlingMap() {
             className="w-4 h-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500"
           />
           <span className="text-sm text-slate-700">Campsites</span>
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showNorthLines}
+            onChange={(e) => setShowNorthLines(e.target.checked)}
+            className="w-4 h-4 rounded border-slate-300 text-red-600 focus:ring-red-500"
+          />
+          <span className="text-sm text-slate-700">North lines</span>
         </label>
         
         <div className="ml-auto flex items-center gap-2">
@@ -426,6 +515,12 @@ export default function StirlingMap() {
           <span className="text-base">🏕️</span>
           Campsites
         </span>
+        {showNorthLines && (
+          <span className="flex items-center gap-2">
+            <span className="w-0.5 h-4 bg-red-500" />
+            <span className="text-red-600 font-medium">N▲ North lines</span>
+          </span>
+        )}
         {locationStatus === "tracking" && (
           <span className="flex items-center gap-2">
             <span className="w-3 h-3 bg-blue-500 rounded-full border-2 border-white shadow" />
