@@ -15,24 +15,34 @@ The Stirling Ridge Walk is a challenging 25km multi-day hike across the dramatic
 - **Home Page** — Trail overview, warnings, quick facts, and weather information
 - **Trail Info** — Comprehensive guide with directions, all 12 peaks, camping spots, exit routes, and safety information
 - **Itinerary** — Day-by-day breakdown with 2-day and 3-day planning options
-- **Interactive Map** — Topographic map with peaks, campsites, and route overlay (OpenTopoMap + Satellite)
+- **Interactive Map** — Full GPX trail (1,514 points), peaks, campsites, GPS, and orienteering compass
+- **3D Satellite Preview** — Mapbox 3D terrain with satellite imagery, contours, and walk-along flythrough
 - **Gear Checklist** — Interactive checklist with progress tracking, categories, and local storage persistence
+- **Offline PWA** — Install on iPhone for offline use
 
 ## Run Locally
 
 ```bash
 npm install
+cp .env.example .env.local   # then add your Mapbox token
 npm run dev
 ```
 
 Open [http://localhost:3002](http://localhost:3002).
+
+### Mapbox 3D Preview
+
+1. Get a free token at [mapbox.com](https://account.mapbox.com/access-tokens/)
+2. Set `NEXT_PUBLIC_MAPBOX_TOKEN` in `.env.local` (local) or Vercel Environment Variables (production)
+3. Redeploy / restart — the 3D preview appears on the Map page
 
 ## Deploy to Vercel
 
 1. Push this project to GitHub
 2. Go to [vercel.com](https://vercel.com) and sign in with GitHub
 3. Import the repository
-4. Deploy — your app will be live at `your-project.vercel.app`
+4. Add `NEXT_PUBLIC_MAPBOX_TOKEN` in Project Settings → Environment Variables
+5. Deploy — your app will be live at `your-project.vercel.app`
 
 See [DEPLOY.md](./DEPLOY.md) for detailed instructions.
 
@@ -46,7 +56,7 @@ See [DEPLOY.md](./DEPLOY.md) for detailed instructions.
 
 - **Framework**: Next.js 14
 - **Styling**: Tailwind CSS
-- **Maps**: Leaflet with OpenTopoMap
+- **Maps**: Leaflet (OpenTopoMap) + Mapbox GL JS (3D satellite terrain)
 - **Language**: TypeScript
 
 ## Customisation

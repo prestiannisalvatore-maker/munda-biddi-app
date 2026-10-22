@@ -416,7 +416,7 @@ export default function StirlingMap() {
       <div className="bg-white px-4 py-3 border-t border-slate-200 flex flex-wrap gap-4 text-sm text-slate-600">
         <span className="flex items-center gap-2">
           <span className="w-4 h-1 bg-orange-500 rounded" />
-          Ridge Route (approximate)
+          Full GPX track (1,514 points)
         </span>
         <span className="flex items-center gap-2">
           <span className="text-base">⛰️</span>

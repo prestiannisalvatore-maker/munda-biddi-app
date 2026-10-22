@@ -1,11 +1,21 @@
 import dynamic from "next/dynamic";
 import { trailInfo, peaks } from "@/data/stirlingRidgeData";
+import { routeCoordinates } from "@/data/routeCoordinates";
 
 const StirlingMap = dynamic(() => import("@/components/StirlingMap"), {
   ssr: false,
   loading: () => (
     <div className="h-[600px] rounded-xl bg-slate-200 animate-pulse flex items-center justify-center">
       <span className="text-slate-500">Loading map...</span>
+    </div>
+  ),
+});
+
+const Mapbox3DTrail = dynamic(() => import("@/components/Mapbox3DTrail"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[500px] rounded-xl bg-slate-800 animate-pulse flex items-center justify-center">
+      <span className="text-slate-400">Loading 3D trail preview...</span>
     </div>
   ),
 });
@@ -29,21 +39,32 @@ export default function MapPage() {
         <div className="flex items-start gap-3">
           <span className="text-3xl">⚠️</span>
           <div>
-            <h2 className="font-bold text-red-800 text-lg mb-2">CRITICAL: Do NOT Use This Map for Navigation</h2>
+            <h2 className="font-bold text-red-800 text-lg mb-2">CRITICAL: Do NOT Use This Map Alone for Navigation</h2>
             <p className="text-red-700 text-sm mb-3">
-              This map shows <strong>approximate</strong> locations for planning purposes only. 
-              The coordinates and route line are indicative and may not be accurate.
+              The trail line plots all <strong>{routeCoordinates.length.toLocaleString()} GPS points</strong> from a verified
+              hike recording. Peak and campsite markers are approximate. Use this for planning and preview only.
             </p>
             <p className="text-red-800 font-semibold text-sm">
-              For actual hiking navigation, you MUST download verified GPX tracks from AllTrails 
-              or the Stirling Ridge Walk Facebook Group. Carry a proper GPS device, topographic map, 
-              and compass. Your life depends on proper navigation equipment.
+              For actual hiking navigation, download the GPX file below into a dedicated GPS app.
+              Carry a topographic map, compass, and PLB. Your life depends on proper navigation equipment.
             </p>
           </div>
         </div>
       </div>
 
       <StirlingMap />
+
+      {/* Mapbox 3D Satellite Preview */}
+      <section className="space-y-3">
+        <div>
+          <h2 className="text-xl font-bold text-slate-800">3D Satellite Trail Preview</h2>
+          <p className="text-slate-600 text-sm mt-1">
+            Fly along the ridge in 3D with satellite imagery, terrain contours, and the full GPX track.
+            Press ▶ to walk the trail from Ellen Peak to Bluff Knoll.
+          </p>
+        </div>
+        <Mapbox3DTrail />
+      </section>
 
       {/* GPS Location Info */}
       <div className="bg-blue-50 rounded-xl border-2 border-blue-400 p-6">
@@ -117,16 +138,16 @@ export default function MapPage() {
           <h2 className="font-semibold text-lg text-slate-800 mb-4">Map Limitations</h2>
           <ul className="space-y-2 text-sm text-slate-700">
             <li className="flex items-start gap-2">
+              <span className="text-emerald-500 mt-0.5">✓</span>
+              Trail line uses all {routeCoordinates.length.toLocaleString()} recorded GPS points
+            </li>
+            <li className="flex items-start gap-2">
               <span className="text-red-500 mt-0.5">⚠️</span>
               Peak and campsite locations are approximate
             </li>
             <li className="flex items-start gap-2">
               <span className="text-red-500 mt-0.5">⚠️</span>
-              Route line is indicative only - not the actual trail
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-red-500 mt-0.5">⚠️</span>
-              This map is NOT suitable for navigation
+              Still NOT a substitute for dedicated GPS + map + compass
             </li>
             <li className="flex items-start gap-2">
               <span className="text-amber-500 mt-0.5">•</span>
@@ -156,7 +177,7 @@ export default function MapPage() {
           Download Verified GPX Track
         </a>
         <p className="text-emerald-600 text-xs mt-3">
-          Source: Ride With GPS - 1,514 track points recorded over the full route
+          Source: Ride With GPS — all {routeCoordinates.length.toLocaleString()} track points are plotted on the maps above
         </p>
       </div>
 
