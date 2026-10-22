@@ -357,6 +357,30 @@ export default function StirlingMap() {
     if (showCompass) setShowNorthLines(true);
   }, [showCompass]);
 
+  // Disable Leaflet map gestures while user is moving/rotating the compass with fingers
+  const handleCompassInteract = useCallback((active: boolean) => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    const tapHandler = (map as L.Map & { tap?: { disable: () => void; enable: () => void } }).tap;
+
+    if (active) {
+      map.dragging.disable();
+      map.touchZoom.disable();
+      map.doubleClickZoom.disable();
+      map.scrollWheelZoom.disable();
+      map.boxZoom.disable();
+      tapHandler?.disable();
+    } else {
+      map.dragging.enable();
+      map.touchZoom.enable();
+      map.doubleClickZoom.enable();
+      map.scrollWheelZoom.enable();
+      map.boxZoom.enable();
+      tapHandler?.enable();
+    }
+  }, []);
+
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
@@ -497,7 +521,11 @@ export default function StirlingMap() {
         {showCompass && (
           <MapCompass
             magneticDeclination={1.5}
-            onClose={() => setShowCompass(false)}
+            onClose={() => {
+              handleCompassInteract(false);
+              setShowCompass(false);
+            }}
+            onInteractChange={handleCompassInteract}
           />
         )}
       </div>
