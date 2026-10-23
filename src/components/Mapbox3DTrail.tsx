@@ -9,22 +9,63 @@ import { peaks, campsites } from "@/data/stirlingRidgeData";
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
 const TRAIL_LEN = routeCoordinates.length;
 const LAST_IDX = TRAIL_LEN - 1;
-/** Full trail walk duration at 1× (seconds). */
-const BASE_DURATION_SEC = 45;
+/** Full trail walk duration at 1× — slow scenic flyover. */
+const BASE_DURATION_SEC = 160;
 /** How often to push progress into React for the scrubber UI. */
-const UI_UPDATE_MS = 100;
-/** Look ahead ~2–3 GPS samples (~80–150 m) for camera bearing. */
-const BEARING_LOOKAHEAD = 3;
-const PLAY_ZOOM = 13.5;
+const UI_UPDATE_MS = 150;
+/** Look ahead ~8 GPS samples (~300–400 m) for stable camera bearing. */
+const BEARING_LOOKAHEAD = 8;
+const PLAY_ZOOM = 14;
+/** Camera follow smoothing (lower = smoother / less snappy). */
+const CENTER_SMOOTH = 0.12;
+const BEARING_SMOOTH = 0.08;
+const SPEED_OPTIONS = [0.5, 1, 2] as const;
 
-function bearingBetween(i: number, j: number): number {
-  const [lng, lat] = routeCoordinates[i];
-  const [nextLng, nextLat] = routeCoordinates[j];
+function shortestAngleDelta(from: number, to: number): number {
+  let delta = to - from;
+  while (delta > 180) delta -= 360;
+  while (delta < -180) delta += 360;
+  return delta;
+}
+
+function bearingBetweenCoords(
+  a: [number, number],
+  b: [number, number]
+): number {
+  const [lng, lat] = a;
+  const [nextLng, nextLat] = b;
   return (Math.atan2(nextLng - lng, nextLat - lat) * 180) / Math.PI;
 }
 
+/** Interpolate along the GPX so the camera doesn't snap between points. */
+function sampleTrail(pct: number): {
+  lng: number;
+  lat: number;
+  bearing: number;
+  index: number;
+} {
+  const clamped = Math.min(Math.max(pct, 0), 100);
+  const t = (clamped / 100) * LAST_IDX;
+  const i0 = Math.min(Math.floor(t), LAST_IDX);
+  const i1 = Math.min(i0 + 1, LAST_IDX);
+  const f = t - i0;
+
+  const [lng0, lat0] = routeCoordinates[i0];
+  const [lng1, lat1] = routeCoordinates[i1];
+  const lng = lng0 + (lng1 - lng0) * f;
+  const lat = lat0 + (lat1 - lat0) * f;
+
+  const look = Math.min(i0 + BEARING_LOOKAHEAD, LAST_IDX);
+  const bearing =
+    look === i0
+      ? 0
+      : bearingBetweenCoords([lng, lat], routeCoordinates[look] as [number, number]);
+
+  return { lng, lat, bearing, index: i0 };
+}
+
 function indexAtProgress(pct: number): number {
-  return Math.min(Math.max(Math.floor((pct / 100) * LAST_IDX), 0), LAST_IDX);
+  return sampleTrail(pct).index;
 }
 
 export default function Mapbox3DTrail() {
@@ -36,17 +77,18 @@ export default function Mapbox3DTrail() {
   const pitchRef = useRef(60);
   const isPlayingRef = useRef(false);
   const lastUiUpdateRef = useRef(0);
-  const lastBearingRef = useRef<number | null>(null);
+  const smoothCenterRef = useRef<{ lng: number; lat: number } | null>(null);
+  const smoothBearingRef = useRef<number | null>(null);
 
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [progress, setProgress] = useState(0); // 0-100 along trail
+  const [progress, setProgress] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [pitch, setPitch] = useState(60);
   const [showPeaks, setShowPeaks] = useState(true);
   const [showCamps, setShowCamps] = useState(true);
   const [exaggeration, setExaggeration] = useState(1.5);
-  const [speed, setSpeed] = useState(1); // 1× / 2× / 3×
+  const [speed, setSpeed] = useState(0.5);
 
   const trailGeoJSON: GeoJSON.FeatureCollection = {
     type: "FeatureCollection",
@@ -62,27 +104,46 @@ export default function Mapbox3DTrail() {
     ],
   };
 
-  /** Move camera + walker marker. Prefer jumpTo during scrub/play for snappy feedback. */
+  const resetCameraSmoothing = useCallback(() => {
+    smoothCenterRef.current = null;
+    smoothBearingRef.current = null;
+  }, []);
+
+  /** Move camera + walker. Interpolated + smoothed during play for less jerk. */
   const applyCamera = useCallback(
-    (pct: number, opts?: { animate?: boolean; duration?: number; zoom?: number }) => {
+    (
+      pct: number,
+      opts?: {
+        animate?: boolean;
+        duration?: number;
+        zoom?: number;
+        smooth?: boolean;
+      }
+    ) => {
       const map = mapRef.current;
       if (!map) return;
 
-      const idx = indexAtProgress(pct);
-      const look = Math.min(idx + BEARING_LOOKAHEAD, LAST_IDX);
-      let bearing = bearingBetween(idx, look);
+      const sample = sampleTrail(pct);
+      let { lng, lat, bearing } = sample;
 
-      // Soften bearing jumps so the camera doesn't whip on switchbacks
-      const prev = lastBearingRef.current;
-      if (prev !== null) {
-        let delta = bearing - prev;
-        while (delta > 180) delta -= 360;
-        while (delta < -180) delta += 360;
-        bearing = prev + delta * 0.35;
+      if (opts?.smooth) {
+        const prevC = smoothCenterRef.current;
+        if (prevC) {
+          lng = prevC.lng + (lng - prevC.lng) * CENTER_SMOOTH;
+          lat = prevC.lat + (lat - prevC.lat) * CENTER_SMOOTH;
+        }
+        smoothCenterRef.current = { lng, lat };
+
+        const prevB = smoothBearingRef.current;
+        if (prevB !== null) {
+          bearing = prevB + shortestAngleDelta(prevB, bearing) * BEARING_SMOOTH;
+        }
+        smoothBearingRef.current = bearing;
+      } else {
+        smoothCenterRef.current = { lng, lat };
+        smoothBearingRef.current = bearing;
       }
-      lastBearingRef.current = bearing;
 
-      const [lng, lat] = routeCoordinates[idx];
       markerRef.current?.setLngLat([lng, lat]);
 
       const camera = {
@@ -95,8 +156,9 @@ export default function Mapbox3DTrail() {
       if (opts?.animate) {
         map.easeTo({
           ...camera,
-          duration: opts.duration ?? 350,
+          duration: opts.duration ?? 500,
           essential: true,
+          easing: (t) => t * (2 - t),
         });
       } else {
         map.jumpTo(camera);
@@ -112,7 +174,13 @@ export default function Mapbox3DTrail() {
     setProgress(pct);
   }, []);
 
-  // Initialize Mapbox
+  const setContourLabelsVisible = useCallback((visible: boolean) => {
+    const map = mapRef.current;
+    if (!map?.getLayer("contour-labels")) return;
+    map.setLayoutProperty("contour-labels", "visibility", visible ? "visible" : "none");
+  }, []);
+
+  // Initialize Mapbox — pure satellite imagery + 3D terrain
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
 
@@ -126,14 +194,15 @@ export default function Mapbox3DTrail() {
     try {
       const map = new mapboxgl.Map({
         container: mapContainer.current,
-        style: "mapbox://styles/mapbox/satellite-streets-v12",
+        // Pure satellite (no street overlays) so the ridge imagery is clear
+        style: "mapbox://styles/mapbox/satellite-v9",
         center: [118.31, -34.355],
         zoom: 12,
         pitch: 60,
         bearing: -45,
         antialias: true,
-        // Prefer responsiveness over maximum terrain detail while flying
-        fadeDuration: 0,
+        fadeDuration: 300,
+        maxPitch: 80,
       });
 
       map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), "top-right");
@@ -167,6 +236,7 @@ export default function Mapbox3DTrail() {
           url: "mapbox://mapbox.mapbox-terrain-v2",
         });
 
+        // Light contours so satellite stays visible
         map.addLayer({
           id: "contour-lines",
           type: "line",
@@ -182,11 +252,11 @@ export default function Mapbox3DTrail() {
               "interpolate",
               ["linear"],
               ["get", "ele"],
-              0, 0.3,
-              500, 0.5,
-              1000, 1.2,
+              0, 0.25,
+              500, 0.4,
+              1000, 0.9,
             ],
-            "line-opacity": 0.55,
+            "line-opacity": 0.35,
           },
         });
 
@@ -207,7 +277,7 @@ export default function Mapbox3DTrail() {
             "text-color": "#ffffff",
             "text-halo-color": "#000000",
             "text-halo-width": 1,
-            "text-opacity": 0.8,
+            "text-opacity": 0.65,
           },
         });
 
@@ -227,7 +297,7 @@ export default function Mapbox3DTrail() {
           paint: {
             "line-color": "#fbbf24",
             "line-width": 10,
-            "line-opacity": 0.35,
+            "line-opacity": 0.4,
           },
         });
 
@@ -349,7 +419,6 @@ export default function Mapbox3DTrail() {
     });
   }, [loaded, showCamps]);
 
-  // Terrain exaggeration
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !loaded) return;
@@ -360,10 +429,9 @@ export default function Mapbox3DTrail() {
     pitchRef.current = pitch;
     const map = mapRef.current;
     if (!map || !loaded || isPlayingRef.current) return;
-    map.easeTo({ pitch, duration: 200 });
+    map.easeTo({ pitch, duration: 250 });
   }, [pitch, loaded]);
 
-  // Keep play speed available to the RAF loop without restarting it
   const speedRef = useRef(speed);
   useEffect(() => {
     speedRef.current = speed;
@@ -372,29 +440,34 @@ export default function Mapbox3DTrail() {
   const stopPlayback = useCallback(() => {
     isPlayingRef.current = false;
     setIsPlaying(false);
+    setContourLabelsVisible(true);
     if (animFrameRef.current) {
       cancelAnimationFrame(animFrameRef.current);
       animFrameRef.current = null;
     }
-  }, []);
+  }, [setContourLabelsVisible]);
 
   const startPlayback = useCallback(() => {
     const map = mapRef.current;
     if (!map || !loaded) return;
 
-    // Cancel any in-flight ease/fit so play starts immediately
     map.stop();
+    // Hide contour labels while flying — they cause visual flicker
+    setContourLabelsVisible(false);
 
     let startPct = progressRef.current;
     if (startPct >= 99.5) {
       startPct = 0;
       progressRef.current = 0;
-      lastBearingRef.current = null;
+      resetCameraSmoothing();
       syncProgressUi(0, true);
     }
 
-    // Snap into fly-along framing right away
-    applyCamera(startPct, { zoom: PLAY_ZOOM });
+    // Seed smoother from the current trail sample, then glide
+    const seed = sampleTrail(startPct);
+    smoothCenterRef.current = { lng: seed.lng, lat: seed.lat };
+    smoothBearingRef.current = seed.bearing;
+    applyCamera(startPct, { zoom: PLAY_ZOOM, smooth: false });
 
     isPlayingRef.current = true;
     setIsPlaying(true);
@@ -403,7 +476,7 @@ export default function Mapbox3DTrail() {
     const tick = (now: number) => {
       if (!isPlayingRef.current) return;
 
-      const dt = Math.min((now - last) / 1000, 0.05); // clamp large tab-resume gaps
+      const dt = Math.min((now - last) / 1000, 0.05);
       last = now;
 
       const rate = (100 / BASE_DURATION_SEC) * speedRef.current;
@@ -411,21 +484,21 @@ export default function Mapbox3DTrail() {
 
       if (next >= 100) {
         progressRef.current = 100;
-        applyCamera(100, { zoom: PLAY_ZOOM });
+        applyCamera(100, { zoom: PLAY_ZOOM, smooth: true });
         syncProgressUi(100, true);
         stopPlayback();
         return;
       }
 
       progressRef.current = next;
-      applyCamera(next, { zoom: PLAY_ZOOM });
+      applyCamera(next, { zoom: PLAY_ZOOM, smooth: true });
       syncProgressUi(next);
 
       animFrameRef.current = requestAnimationFrame(tick);
     };
 
     animFrameRef.current = requestAnimationFrame(tick);
-  }, [loaded, applyCamera, syncProgressUi, stopPlayback]);
+  }, [loaded, applyCamera, syncProgressUi, stopPlayback, setContourLabelsVisible]);
 
   const togglePlay = useCallback(() => {
     if (isPlayingRef.current) {
@@ -441,11 +514,11 @@ export default function Mapbox3DTrail() {
       stopPlayback();
       mapRef.current?.stop();
       progressRef.current = value;
-      lastBearingRef.current = null;
+      resetCameraSmoothing();
       setProgress(value);
       applyCamera(value);
     },
-    [applyCamera, stopPlayback]
+    [applyCamera, stopPlayback, resetCameraSmoothing]
   );
 
   if (error === "missing-token" || error === "invalid-token") {
@@ -495,14 +568,13 @@ export default function Mapbox3DTrail() {
 
   return (
     <div className="rounded-xl overflow-hidden border border-slate-200 shadow-lg">
-      {/* Toolbar */}
       <div className="bg-slate-900 text-white px-4 py-3 flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
           <span className="text-lg">🛰️</span>
           <div>
             <div className="font-semibold text-sm">3D Trail Preview</div>
             <div className="text-[10px] text-slate-400">
-              {TRAIL_LEN.toLocaleString()} GPS points · Satellite + Terrain
+              {TRAIL_LEN.toLocaleString()} GPS points · Satellite imagery + 3D terrain
             </div>
           </div>
         </div>
@@ -529,19 +601,17 @@ export default function Mapbox3DTrail() {
         </div>
       </div>
 
-      {/* Map */}
       <div ref={mapContainer} className="w-full h-[500px] sm:h-[600px] relative bg-slate-800">
         {!loaded && !error && (
           <div className="absolute inset-0 flex items-center justify-center text-white z-10">
             <div className="text-center">
               <div className="animate-pulse text-2xl mb-2">🏔️</div>
-              <div className="text-sm text-slate-300">Loading 3D terrain...</div>
+              <div className="text-sm text-slate-300">Loading satellite terrain...</div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Walk-along controls */}
       <div className="bg-slate-900 text-white px-4 py-4 space-y-3">
         <div className="flex items-center gap-3">
           <button
@@ -605,7 +675,7 @@ export default function Mapbox3DTrail() {
           <div>
             <label className="text-slate-400 block mb-1">Play speed</label>
             <div className="flex gap-1">
-              {[1, 2, 3].map((s) => (
+              {SPEED_OPTIONS.map((s) => (
                 <button
                   key={s}
                   type="button"
@@ -628,9 +698,9 @@ export default function Mapbox3DTrail() {
                 stopPlayback();
                 mapRef.current?.stop();
                 progressRef.current = 0;
-                lastBearingRef.current = null;
+                resetCameraSmoothing();
                 setProgress(0);
-                applyCamera(0, { animate: true, duration: 500, zoom: PLAY_ZOOM });
+                applyCamera(0, { animate: true, duration: 600, zoom: PLAY_ZOOM });
               }}
               disabled={!loaded}
               className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg disabled:opacity-40"
@@ -656,7 +726,8 @@ export default function Mapbox3DTrail() {
         </div>
 
         <p className="text-[11px] text-slate-500 text-center">
-          Drag the map to look around · Pinch/scroll to zoom · Use ▶ to fly along the ridge in 3D
+          Drag to look around · Pinch/scroll to zoom · ▶ flies the ridge slowly over satellite imagery
+          (default 0.5×)
         </p>
       </div>
     </div>
