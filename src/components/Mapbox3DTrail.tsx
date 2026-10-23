@@ -498,7 +498,14 @@ export default function Mapbox3DTrail() {
     };
 
     animFrameRef.current = requestAnimationFrame(tick);
-  }, [loaded, applyCamera, syncProgressUi, stopPlayback, setContourLabelsVisible]);
+  }, [
+    loaded,
+    applyCamera,
+    syncProgressUi,
+    stopPlayback,
+    setContourLabelsVisible,
+    resetCameraSmoothing,
+  ]);
 
   const togglePlay = useCallback(() => {
     if (isPlayingRef.current) {
