@@ -116,6 +116,19 @@ export default function Home() {
             Essential and recommended gear with interactive checklist.
           </p>
         </Link>
+
+        <Link
+          href="/help"
+          className="group p-6 rounded-xl bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-amber-300 transition-all"
+        >
+          <div className="text-3xl mb-3">❓</div>
+          <h2 className="font-semibold text-slate-800 mb-2 group-hover:text-amber-700 transition-colors">
+            Help
+          </h2>
+          <p className="text-sm text-slate-600">
+            Map tips, GPS &amp; compass how-to, GPX download, and offline setup.
+          </p>
+        </Link>
       </section>
 
       {/* Quick Facts */}

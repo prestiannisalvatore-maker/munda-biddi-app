@@ -73,6 +73,11 @@
       "name": "Gear Checklist",
       "url": "/checklist",
       "description": "Check your gear list"
+    },
+    {
+      "name": "Help",
+      "url": "/help",
+      "description": "Map tips, GPX download, and offline setup"
     }
   ]
 }

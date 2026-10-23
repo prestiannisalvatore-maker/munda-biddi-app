@@ -1,0 +1,317 @@
+import dynamic from "next/dynamic";
+import Link from "next/link";
+import { trailInfo, peaks } from "@/data/stirlingRidgeData";
+import { routeCoordinates } from "@/data/routeCoordinates";
+
+const OfflineManager = dynamic(() => import("@/components/OfflineManager"), {
+  ssr: false,
+});
+
+export default function HelpPage() {
+  return (
+    <div className="space-y-6">
+      <header>
+        <h1 className="text-2xl font-bold text-slate-800">Help</h1>
+        <p className="text-slate-600 mt-1">
+          How to use the Trail Map, GPS, compass, offline mode, and what to carry before you hike.
+        </p>
+      </header>
+
+      {/* CRITICAL WARNING */}
+      <div className="bg-red-100 border-2 border-red-400 rounded-xl p-6">
+        <div className="flex items-start gap-3">
+          <span className="text-3xl">⚠️</span>
+          <div>
+            <h2 className="font-bold text-red-800 text-lg mb-2">
+              CRITICAL: Do NOT Use This App Alone for Navigation
+            </h2>
+            <p className="text-red-700 text-sm mb-3">
+              The trail line plots all <strong>{routeCoordinates.length.toLocaleString()} GPS points</strong>{" "}
+              from a verified hike recording. Peak and campsite markers are approximate. Use this for
+              planning and preview only.
+            </p>
+            <p className="text-red-800 font-semibold text-sm">
+              For actual hiking navigation, download the GPX file below into a dedicated GPS app. Carry
+              a topographic map, compass, and PLB. Your life depends on proper navigation equipment.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Manual navigation / triangulation guide */}
+      <div className="bg-indigo-50 rounded-xl border-2 border-indigo-400 p-6">
+        <div className="flex items-start gap-3">
+          <span className="text-3xl">📐</span>
+          <div className="flex-1">
+            <h2 className="font-bold text-indigo-900 text-lg mb-2">
+              Manual Navigation — Find Yourself Without GPS
+            </h2>
+            <p className="text-indigo-800 text-sm mb-4">
+              If your phone GPS fails, open the{" "}
+              <Link href="/map" className="font-semibold underline">
+                Trail Map
+              </Link>{" "}
+              and use the <strong>Find me</strong> button. Sight two peaks with the compass, enter the
+              bearings, and the app draws two lines on the map. Where they cross is your approximate
+              position.
+            </p>
+            <div className="grid sm:grid-cols-2 gap-3 text-sm">
+              <div className="bg-white rounded-lg p-3 border border-indigo-200">
+                <p className="font-semibold text-indigo-800 mb-1">On the trail</p>
+                <ol className="list-decimal pl-4 text-indigo-700 space-y-1 text-xs">
+                  <li>Identify two visible peaks (e.g. Bluff Knoll + Ellen Peak)</li>
+                  <li>Open Compass → point at peak 1 → note the bearing</li>
+                  <li>
+                    Tap <strong>Find me</strong> → enter peak + bearing
+                  </li>
+                  <li>Repeat for peak 2 → tap Draw lines</li>
+                  <li>Pink marker = where you are</li>
+                </ol>
+              </div>
+              <div className="bg-white rounded-lg p-3 border border-indigo-200">
+                <p className="font-semibold text-indigo-800 mb-1">For best accuracy</p>
+                <ul className="text-indigo-700 space-y-1 text-xs">
+                  <li>
+                    • Choose peaks that are well apart in direction (aim for ~90° between bearings)
+                  </li>
+                  <li>• Hold the compass flat and steady when sighting</li>
+                  <li>• Cross-check against the orange trail line</li>
+                  <li>• Use a third peak if the cross looks uncertain</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* GPS Location Info */}
+      <div className="bg-blue-50 rounded-xl border-2 border-blue-400 p-6">
+        <div className="flex items-start gap-3">
+          <span className="text-3xl">📍</span>
+          <div>
+            <h2 className="font-bold text-blue-800 text-lg mb-2">GPS Location Tracking</h2>
+            <p className="text-blue-700 text-sm mb-3">
+              On the{" "}
+              <Link href="/map" className="font-semibold underline">
+                Trail Map
+              </Link>
+              , tap <strong>&quot;Show My Location&quot;</strong> to see your current position. Your
+              phone&apos;s GPS works without internet — the blue dot shows where you are.
+            </p>
+            <div className="bg-blue-100 rounded-lg p-4 mt-3">
+              <h3 className="font-semibold text-blue-800 text-sm mb-2">⚠️ Important: Offline Use</h3>
+              <ul className="text-blue-700 text-sm space-y-1">
+                <li>
+                  • <strong>GPS positioning works offline</strong> — your location will update without
+                  internet
+                </li>
+                <li>
+                  • <strong>Map tiles require internet</strong> — the background map won&apos;t load
+                  without signal (download tiles below while online)
+                </li>
+                <li>
+                  • <strong>For true offline navigation</strong>, use a dedicated GPS app with
+                  downloaded maps:
+                </li>
+              </ul>
+              <div className="mt-3 grid sm:grid-cols-2 gap-2">
+                <div className="bg-white rounded p-2 text-xs">
+                  <strong>Recommended Apps:</strong>
+                  <ul className="mt-1 text-blue-600">
+                    <li>• Gaia GPS (download offline maps)</li>
+                    <li>• AllTrails (premium offline maps)</li>
+                    <li>• Avenza Maps (free offline)</li>
+                  </ul>
+                </div>
+                <div className="bg-white rounded p-2 text-xs">
+                  <strong>Before Your Hike:</strong>
+                  <ul className="mt-1 text-blue-600">
+                    <li>• Download GPX track to your app</li>
+                    <li>• Download offline map tiles</li>
+                    <li>• Test everything works without WiFi</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Map Info */}
+      <div className="grid md:grid-cols-2 gap-6">
+        <div className="bg-white rounded-xl border border-slate-200 p-6">
+          <h2 className="font-semibold text-lg text-slate-800 mb-4">Route Overview</h2>
+          <dl className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <dt className="text-slate-600">Total Distance</dt>
+              <dd className="font-medium text-slate-800">{trailInfo.distanceKm}km</dd>
+            </div>
+            <div className="flex justify-between">
+              <dt className="text-slate-600">Total Elevation Gain</dt>
+              <dd className="font-medium text-slate-800">{trailInfo.elevationGainM}m</dd>
+            </div>
+            <div className="flex justify-between">
+              <dt className="text-slate-600">Highest Point</dt>
+              <dd className="font-medium text-amber-700">
+                {trailInfo.highestPoint.name} ({trailInfo.highestPoint.elevation}m)
+              </dd>
+            </div>
+            <div className="flex justify-between">
+              <dt className="text-slate-600">Lowest Point</dt>
+              <dd className="font-medium text-slate-800">
+                {trailInfo.lowestPoint.name} ({trailInfo.lowestPoint.elevation}m)
+              </dd>
+            </div>
+            <div className="flex justify-between">
+              <dt className="text-slate-600">Number of Peaks</dt>
+              <dd className="font-medium text-slate-800">{peaks.length}</dd>
+            </div>
+          </dl>
+        </div>
+
+        <div className="bg-white rounded-xl border border-slate-200 p-6">
+          <h2 className="font-semibold text-lg text-slate-800 mb-4">Map Limitations</h2>
+          <ul className="space-y-2 text-sm text-slate-700">
+            <li className="flex items-start gap-2">
+              <span className="text-emerald-500 mt-0.5">✓</span>
+              Trail line uses all {routeCoordinates.length.toLocaleString()} recorded GPS points
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-red-500 mt-0.5">⚠️</span>
+              Peak and campsite locations are approximate
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-red-500 mt-0.5">⚠️</span>
+              Still NOT a substitute for dedicated GPS + map + compass
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-amber-500 mt-0.5">•</span>
+              Use layer control (top right) for satellite view
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-amber-500 mt-0.5">•</span>
+              Click markers for location information
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      {/* Download GPX File */}
+      <div className="bg-emerald-100 rounded-xl border-2 border-emerald-500 p-6">
+        <h2 className="font-bold text-lg text-emerald-800 mb-4">📥 Download GPX Track</h2>
+        <p className="text-emerald-700 text-sm mb-4">
+          This is a verified GPS track recorded during an actual hike on April 29, 2022. Download and
+          load into your GPS device BEFORE your hike.
+        </p>
+        <a
+          href="/stirling-ridge-walk.gpx"
+          download="stirling-ridge-walk.gpx"
+          className="inline-flex items-center gap-3 px-6 py-4 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-bold text-lg"
+        >
+          <span className="text-2xl">📍</span>
+          Download Verified GPX Track
+        </a>
+        <p className="text-emerald-600 text-xs mt-3">
+          Source: Ride With GPS — all {routeCoordinates.length.toLocaleString()} track points are
+          plotted on the Trail Map and 3D Preview
+        </p>
+      </div>
+
+      {/* Offline Mode Setup */}
+      <OfflineManager />
+
+      {/* Additional Navigation Resources */}
+      <div className="bg-green-50 rounded-xl border-2 border-green-400 p-6">
+        <h2 className="font-bold text-lg text-green-800 mb-4">✅ Additional Navigation Resources</h2>
+        <p className="text-green-700 text-sm mb-4">
+          Cross-reference with multiple sources. Test that they work offline before your hike.
+        </p>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <a
+            href="https://www.alltrails.com/trail/australia/western-australia/stirling-range-ridge-walk"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 p-4 bg-white rounded-lg border-2 border-green-300 hover:bg-green-50 transition-colors"
+          >
+            <span className="text-3xl">📱</span>
+            <div>
+              <div className="font-bold text-green-800">AllTrails</div>
+              <div className="text-sm text-green-600">Additional verified track</div>
+            </div>
+          </a>
+          <a
+            href="https://www.facebook.com/groups/stirlingridgewalk/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 p-4 bg-white rounded-lg border-2 border-green-300 hover:bg-green-50 transition-colors"
+          >
+            <span className="text-3xl">📂</span>
+            <div>
+              <div className="font-bold text-green-800">Facebook Group</div>
+              <div className="text-sm text-green-600">Community waypoints and updates</div>
+            </div>
+          </a>
+          <a
+            href="https://www.trailhiking.com.au/hikes/stirling-range-ridge-traverse/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 p-4 bg-white rounded-lg border-2 border-green-300 hover:bg-green-50 transition-colors"
+          >
+            <span className="text-3xl">🗺️</span>
+            <div>
+              <div className="font-bold text-green-800">Trail Hiking Australia</div>
+              <div className="text-sm text-green-600">Detailed route info</div>
+            </div>
+          </a>
+          <a
+            href="https://fastestknowntime.com/route/stirling-range-ridge-walk"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 p-4 bg-white rounded-lg border-2 border-green-300 hover:bg-green-50 transition-colors"
+          >
+            <span className="text-3xl">⏱️</span>
+            <div>
+              <div className="font-bold text-green-800">Fastest Known Time</div>
+              <div className="text-sm text-green-600">Alternative route files</div>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      {/* Navigation Equipment Reminder */}
+      <div className="bg-amber-50 rounded-xl border border-amber-200 p-6">
+        <h2 className="font-semibold text-lg text-amber-800 mb-4">Required Navigation Equipment</h2>
+        <div className="grid sm:grid-cols-2 gap-4 text-sm text-amber-800">
+          <ul className="space-y-2">
+            <li className="flex items-start gap-2">
+              <span className="text-amber-600 mt-0.5">✓</span>
+              GPS device with offline maps and GPX track loaded
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-amber-600 mt-0.5">✓</span>
+              1:25,000 topographic map of the area
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-amber-600 mt-0.5">✓</span>
+              Compass (and know how to use it)
+            </li>
+          </ul>
+          <ul className="space-y-2">
+            <li className="flex items-start gap-2">
+              <span className="text-amber-600 mt-0.5">✓</span>
+              Personal Locator Beacon (PLB)
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-amber-600 mt-0.5">✓</span>
+              Backup power for GPS device
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-amber-600 mt-0.5">✓</span>
+              Knowledge of all exit routes
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -10,6 +10,7 @@ const navItems = [
   { href: "/info", label: "Trail Info" },
   { href: "/itinerary", label: "Itinerary" },
   { href: "/checklist", label: "Checklist" },
+  { href: "/help", label: "Help" },
 ];
 
 export default function Navigation() {
