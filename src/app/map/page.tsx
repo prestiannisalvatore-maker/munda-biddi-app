@@ -11,15 +11,6 @@ const StirlingMap = dynamic(() => import("@/components/StirlingMap"), {
   ),
 });
 
-const Mapbox3DTrail = dynamic(() => import("@/components/Mapbox3DTrail"), {
-  ssr: false,
-  loading: () => (
-    <div className="h-[500px] rounded-xl bg-slate-800 animate-pulse flex items-center justify-center">
-      <span className="text-slate-400">Loading 3D trail preview...</span>
-    </div>
-  ),
-});
-
 const OfflineManager = dynamic(() => import("@/components/OfflineManager"), {
   ssr: false,
 });
@@ -91,18 +82,6 @@ export default function MapPage() {
           </div>
         </div>
       </div>
-
-      {/* Mapbox 3D Satellite Preview */}
-      <section className="space-y-3">
-        <div>
-          <h2 className="text-xl font-bold text-slate-800">3D Satellite Trail Preview</h2>
-          <p className="text-slate-600 text-sm mt-1">
-            Fly along the ridge in 3D with satellite imagery, terrain contours, and the full GPX track.
-            Press ▶ to walk the trail from Ellen Peak to Bluff Knoll.
-          </p>
-        </div>
-        <Mapbox3DTrail />
-      </section>
 
       {/* GPS Location Info */}
       <div className="bg-blue-50 rounded-xl border-2 border-blue-400 p-6">
@@ -215,7 +194,7 @@ export default function MapPage() {
           Download Verified GPX Track
         </a>
         <p className="text-emerald-600 text-xs mt-3">
-          Source: Ride With GPS — all {routeCoordinates.length.toLocaleString()} track points are plotted on the maps above
+          Source: Ride With GPS — all {routeCoordinates.length.toLocaleString()} track points are plotted on the Trail Map and 3D Preview
         </p>
       </div>
 

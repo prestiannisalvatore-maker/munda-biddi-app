@@ -65,6 +65,11 @@
       "description": "View the trail map with GPS"
     },
     {
+      "name": "3D Preview",
+      "url": "/3d",
+      "description": "Fly the ridge in 3D satellite terrain"
+    },
+    {
       "name": "Gear Checklist",
       "url": "/checklist",
       "description": "Check your gear list"
