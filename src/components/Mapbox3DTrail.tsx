@@ -15,11 +15,50 @@ const BASE_DURATION_SEC = 160;
 const UI_UPDATE_MS = 150;
 /** Look ahead ~8 GPS samples (~300–400 m) for stable camera bearing. */
 const BEARING_LOOKAHEAD = 8;
-const PLAY_ZOOM = 14;
+/** Keep play zoom modest so imagery tiles can keep up. */
+const PLAY_ZOOM = 12.75;
 /** Camera follow smoothing (lower = smoother / less snappy). */
 const CENTER_SMOOTH = 0.12;
 const BEARING_SMOOTH = 0.08;
+/** Throttle map.jumpTo during play to cut tile thrash (marker still updates every frame). */
+const CAMERA_UPDATE_MS = 48;
 const SPEED_OPTIONS = [0.5, 1, 2] as const;
+
+/**
+ * Esri World Imagery as the basemap — Mapbox satellite tiles are often rate-limited
+ * (HTTP 429), which leaves a black WebGL canvas. Esri raster tiles stay visible.
+ */
+const SATELLITE_STYLE: mapboxgl.StyleSpecification = {
+  version: 8,
+  name: "Stirling Satellite",
+  glyphs: "mapbox://fonts/mapbox/{fontstack}/{range}.pbf",
+  sources: {
+    "esri-satellite": {
+      type: "raster",
+      tiles: [
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      ],
+      tileSize: 256,
+      maxzoom: 19,
+      attribution:
+        "Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community",
+    },
+  },
+  layers: [
+    {
+      id: "background",
+      type: "background",
+      paint: { "background-color": "#1a2332" },
+    },
+    {
+      id: "esri-satellite",
+      type: "raster",
+      source: "esri-satellite",
+      minzoom: 0,
+      maxzoom: 22,
+    },
+  ],
+};
 
 function shortestAngleDelta(from: number, to: number): number {
   let delta = to - from;
@@ -79,9 +118,12 @@ export default function Mapbox3DTrail() {
   const lastUiUpdateRef = useRef(0);
   const smoothCenterRef = useRef<{ lng: number; lat: number } | null>(null);
   const smoothBearingRef = useRef<number | null>(null);
+  const lastCameraMoveRef = useRef(0);
+  const terrainFailedRef = useRef(false);
 
   const [loaded, setLoaded] = useState(false);
   const [terrainReady, setTerrainReady] = useState(false);
+  const [terrainNote, setTerrainNote] = useState<string | null>(null);
   const [loadStatus, setLoadStatus] = useState("Loading satellite imagery…");
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
@@ -163,9 +205,18 @@ export default function Mapbox3DTrail() {
           essential: true,
           easing: (t) => t * (2 - t),
         });
-      } else {
-        map.jumpTo(camera);
+        return;
       }
+
+      // During smooth play, don't jump the map every RAF — that floods tile requests
+      // and can blank the imagery. Marker still follows every frame above.
+      if (opts?.smooth) {
+        const now = performance.now();
+        if (now - lastCameraMoveRef.current < CAMERA_UPDATE_MS) return;
+        lastCameraMoveRef.current = now;
+      }
+
+      map.jumpTo(camera);
     },
     []
   );
@@ -183,7 +234,7 @@ export default function Mapbox3DTrail() {
     map.setLayoutProperty("contour-labels", "visibility", visible ? "visible" : "none");
   }, []);
 
-  // Progressive load: satellite + trail first (fast), then DEM 3D, contours optional
+  // Esri satellite first (always visible). Optional Mapbox DEM for 3D — disabled on 429/errors.
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
 
@@ -197,11 +248,9 @@ export default function Mapbox3DTrail() {
     try {
       const map = new mapboxgl.Map({
         container: mapContainer.current,
-        // Pure satellite — paint this before enabling heavy DEM/contours
-        style: "mapbox://styles/mapbox/satellite-v9",
+        style: SATELLITE_STYLE,
         center: [118.31, -34.355],
         zoom: 11.5,
-        // Milder pitch on first paint so flat satellite shows immediately
         pitch: 45,
         bearing: -35,
         antialias: true,
@@ -219,6 +268,27 @@ export default function Mapbox3DTrail() {
 
       const bounds = new mapboxgl.LngLatBounds();
       routeCoordinates.forEach(([lng, lat]) => bounds.extend([lng, lat]));
+
+      const disableTerrain = (reason: string) => {
+        terrainFailedRef.current = true;
+        try {
+          map.setTerrain(null);
+        } catch {
+          /* ignore */
+        }
+        if (map.getLayer("sky")) {
+          try {
+            map.removeLayer("sky");
+          } catch {
+            /* ignore */
+          }
+        }
+        setTerrainReady(false);
+        setTerrainNote(reason);
+        setLoadStatus("");
+        // Keep a pleasant pitched view over flat satellite
+        map.easeTo({ pitch: 50, duration: 400, essential: true });
+      };
 
       const addTrailAndMarkers = () => {
         if (!map.getSource("trail")) {
@@ -274,34 +344,60 @@ export default function Mapbox3DTrail() {
         }
       };
 
-      const enableTerrain = () => {
-        if (map.getSource("mapbox-dem")) return;
-        setLoadStatus("Enhancing 3D terrain…");
-        map.addSource("mapbox-dem", {
-          type: "raster-dem",
-          url: "mapbox://mapbox.mapbox-terrain-dem-v1",
-          tileSize: 512,
-          maxzoom: 14,
-        });
-        map.setTerrain({ source: "mapbox-dem", exaggeration: 1.5 });
-        if (!map.getLayer("sky")) {
-          map.addLayer({
-            id: "sky",
-            type: "sky",
-            paint: {
-              "sky-type": "atmosphere",
-              "sky-atmosphere-sun": [0.0, 90.0],
-              "sky-atmosphere-sun-intensity": 15,
-            },
-          });
+      const enableTerrain = async () => {
+        if (terrainFailedRef.current || map.getSource("mapbox-dem")) return;
+        setLoadStatus("Checking 3D terrain…");
+
+        // Preflight one DEM tile — if Mapbox is rate-limiting, skip terrain so
+        // the canvas never goes black.
+        try {
+          const probe = await fetch(
+            `https://api.mapbox.com/v4/mapbox.mapbox-terrain-dem-v1/10/844/616.webp?access_token=${MAPBOX_TOKEN}`,
+            { method: "GET", cache: "no-store" }
+          );
+          if (!probe.ok) {
+            disableTerrain(
+              probe.status === 429
+                ? "Mapbox 3D terrain temporarily rate-limited — satellite preview stays on."
+                : "3D terrain unavailable — showing flat satellite."
+            );
+            return;
+          }
+        } catch {
+          disableTerrain("3D terrain unavailable — showing flat satellite.");
+          return;
         }
-        map.easeTo({ pitch: 60, duration: 900, essential: true });
-        setTerrainReady(true);
-        setLoadStatus("");
+
+        try {
+          setLoadStatus("Enhancing 3D terrain…");
+          map.addSource("mapbox-dem", {
+            type: "raster-dem",
+            url: "mapbox://mapbox.mapbox-terrain-dem-v1",
+            tileSize: 512,
+            maxzoom: 14,
+          });
+          map.setTerrain({ source: "mapbox-dem", exaggeration: 1.5 });
+          if (!map.getLayer("sky")) {
+            map.addLayer({
+              id: "sky",
+              type: "sky",
+              paint: {
+                "sky-type": "atmosphere",
+                "sky-atmosphere-sun": [0.0, 90.0],
+                "sky-atmosphere-sun-intensity": 15,
+              },
+            });
+          }
+          map.easeTo({ pitch: 60, duration: 900, essential: true });
+          setTerrainReady(true);
+          setTerrainNote(null);
+          setLoadStatus("");
+        } catch {
+          disableTerrain("3D terrain unavailable — showing flat satellite.");
+        }
       };
 
       map.on("load", () => {
-        // Phase 1 — satellite + trail only (fast visible preview)
         addTrailAndMarkers();
         map.fitBounds(bounds, {
           padding: 56,
@@ -310,24 +406,40 @@ export default function Mapbox3DTrail() {
           duration: 0,
         });
         setLoaded(true);
-        setLoadStatus("Satellite ready — building 3D…");
+        setLoadStatus("");
 
-        // Phase 2 — DEM after first idle (or 1.2s fallback) so imagery isn't blocked
+        // Try DEM only after satellite is painted; never risk blanking imagery
         let enhanced = false;
         const enhance = () => {
           if (enhanced) return;
           enhanced = true;
-          enableTerrain();
+          void enableTerrain();
         };
-        map.once("idle", enhance);
-        window.setTimeout(enhance, 1200);
+        map.once("idle", () => window.setTimeout(enhance, 500));
+        window.setTimeout(enhance, 2500);
       });
 
       map.on("error", (e) => {
         console.error("Mapbox error:", e);
-        const msg = e.error?.message || "";
+        const msg = (e.error?.message || "").toLowerCase();
+        const status = (e as { error?: { status?: number } }).error?.status;
         if (msg.includes("access token") || msg.includes("401")) {
           setError("invalid-token");
+          return;
+        }
+        // DEM / Mapbox tile rate limits blank the canvas when terrain is on — drop terrain
+        const isTileFail =
+          status === 429 ||
+          msg.includes("429") ||
+          msg.includes("rate limit") ||
+          msg.includes("dem") ||
+          msg.includes("terrain") ||
+          msg.includes("failed to fetch") ||
+          msg.includes("ajax");
+        if (isTileFail && map.getTerrain()) {
+          disableTerrain(
+            "Mapbox terrain rate-limited — satellite stays on; try 3D again later."
+          );
         }
       });
 
@@ -631,7 +743,8 @@ export default function Mapbox3DTrail() {
           <div>
             <div className="font-semibold text-sm">3D Trail Preview</div>
             <div className="text-[10px] text-slate-400">
-              {TRAIL_LEN.toLocaleString()} GPS points · Satellite imagery + 3D terrain
+              {TRAIL_LEN.toLocaleString()} GPS points · Satellite imagery
+              {terrainReady ? " + 3D terrain" : ""}
             </div>
           </div>
         </div>
@@ -682,6 +795,11 @@ export default function Mapbox3DTrail() {
         {loaded && !!loadStatus && (
           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 px-3 py-1.5 rounded-full bg-black/70 text-white text-xs">
             {loadStatus}
+          </div>
+        )}
+        {loaded && !loadStatus && terrainNote && (
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 max-w-[90%] px-3 py-1.5 rounded-full bg-amber-900/85 text-amber-100 text-[11px] text-center">
+            {terrainNote}
           </div>
         )}
       </div>

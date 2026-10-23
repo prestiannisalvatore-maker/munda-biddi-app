@@ -16,9 +16,9 @@ export default function ThreeDPreviewPage() {
       <header>
         <h1 className="text-2xl font-bold text-slate-800">3D Trail Preview</h1>
         <p className="text-slate-600 mt-1">
-          Fly along the Stirling Ridge in 3D satellite imagery with terrain contours and the full
-          GPX track ({routeCoordinates.length.toLocaleString()} points). Press ▶ to walk the trail
-          from Gnowellen Road to Bluff Knoll.
+          Fly along the Stirling Ridge over satellite imagery (3D terrain when available) with the
+          full GPX track ({routeCoordinates.length.toLocaleString()} points). Press ▶ to walk the
+          trail from Gnowellen Road to Bluff Knoll.
         </p>
       </header>
 
