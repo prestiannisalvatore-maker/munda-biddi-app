@@ -74,19 +74,22 @@ export default function Mapbox3DTrail() {
   const markerRef = useRef<mapboxgl.Marker | null>(null);
   const animFrameRef = useRef<number | null>(null);
   const progressRef = useRef(0);
-  const pitchRef = useRef(60);
+  const pitchRef = useRef(55);
   const isPlayingRef = useRef(false);
   const lastUiUpdateRef = useRef(0);
   const smoothCenterRef = useRef<{ lng: number; lat: number } | null>(null);
   const smoothBearingRef = useRef<number | null>(null);
 
   const [loaded, setLoaded] = useState(false);
+  const [terrainReady, setTerrainReady] = useState(false);
+  const [loadStatus, setLoadStatus] = useState("Loading satellite imagery…");
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [pitch, setPitch] = useState(60);
+  const [pitch, setPitch] = useState(55);
   const [showPeaks, setShowPeaks] = useState(true);
   const [showCamps, setShowCamps] = useState(true);
+  const [showContours, setShowContours] = useState(false);
   const [exaggeration, setExaggeration] = useState(1.5);
   const [speed, setSpeed] = useState(0.5);
 
@@ -180,7 +183,7 @@ export default function Mapbox3DTrail() {
     map.setLayoutProperty("contour-labels", "visibility", visible ? "visible" : "none");
   }, []);
 
-  // Initialize Mapbox — pure satellite imagery + 3D terrain
+  // Progressive load: satellite + trail first (fast), then DEM 3D, contours optional
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
 
@@ -194,15 +197,17 @@ export default function Mapbox3DTrail() {
     try {
       const map = new mapboxgl.Map({
         container: mapContainer.current,
-        // Pure satellite (no street overlays) so the ridge imagery is clear
+        // Pure satellite — paint this before enabling heavy DEM/contours
         style: "mapbox://styles/mapbox/satellite-v9",
         center: [118.31, -34.355],
-        zoom: 12,
-        pitch: 60,
-        bearing: -45,
+        zoom: 11.5,
+        // Milder pitch on first paint so flat satellite shows immediately
+        pitch: 45,
+        bearing: -35,
         antialias: true,
-        fadeDuration: 300,
+        fadeDuration: 0,
         maxPitch: 80,
+        preserveDrawingBuffer: false,
       });
 
       map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), "top-right");
@@ -212,109 +217,38 @@ export default function Mapbox3DTrail() {
         "bottom-left"
       );
 
-      map.on("load", () => {
-        map.addSource("mapbox-dem", {
-          type: "raster-dem",
-          url: "mapbox://mapbox.mapbox-terrain-dem-v1",
-          tileSize: 512,
-          maxzoom: 14,
-        });
-        map.setTerrain({ source: "mapbox-dem", exaggeration: 1.5 });
+      const bounds = new mapboxgl.LngLatBounds();
+      routeCoordinates.forEach(([lng, lat]) => bounds.extend([lng, lat]));
 
-        map.addLayer({
-          id: "sky",
-          type: "sky",
-          paint: {
-            "sky-type": "atmosphere",
-            "sky-atmosphere-sun": [0.0, 90.0],
-            "sky-atmosphere-sun-intensity": 15,
-          },
-        });
-
-        map.addSource("contours", {
-          type: "vector",
-          url: "mapbox://mapbox.mapbox-terrain-v2",
-        });
-
-        // Light contours so satellite stays visible
-        map.addLayer({
-          id: "contour-lines",
-          type: "line",
-          source: "contours",
-          "source-layer": "contour",
-          layout: {
-            "line-join": "round",
-            "line-cap": "round",
-          },
-          paint: {
-            "line-color": "#ffffff",
-            "line-width": [
-              "interpolate",
-              ["linear"],
-              ["get", "ele"],
-              0, 0.25,
-              500, 0.4,
-              1000, 0.9,
-            ],
-            "line-opacity": 0.35,
-          },
-        });
-
-        map.addLayer({
-          id: "contour-labels",
-          type: "symbol",
-          source: "contours",
-          "source-layer": "contour",
-          filter: ["==", ["%", ["get", "ele"], 100], 0],
-          layout: {
-            "symbol-placement": "line",
-            "text-field": ["concat", ["to-string", ["get", "ele"]], " m"],
-            "text-size": 10,
-            "text-max-angle": 25,
-            "text-allow-overlap": false,
-          },
-          paint: {
-            "text-color": "#ffffff",
-            "text-halo-color": "#000000",
-            "text-halo-width": 1,
-            "text-opacity": 0.65,
-          },
-        });
-
-        map.addSource("trail", {
-          type: "geojson",
-          data: trailGeoJSON,
-        });
-
-        map.addLayer({
-          id: "trail-glow",
-          type: "line",
-          source: "trail",
-          layout: {
-            "line-join": "round",
-            "line-cap": "round",
-          },
-          paint: {
-            "line-color": "#fbbf24",
-            "line-width": 10,
-            "line-opacity": 0.4,
-          },
-        });
-
-        map.addLayer({
-          id: "trail-line",
-          type: "line",
-          source: "trail",
-          layout: {
-            "line-join": "round",
-            "line-cap": "round",
-          },
-          paint: {
-            "line-color": "#ea580c",
-            "line-width": 4,
-            "line-opacity": 0.95,
-          },
-        });
+      const addTrailAndMarkers = () => {
+        if (!map.getSource("trail")) {
+          map.addSource("trail", {
+            type: "geojson",
+            data: trailGeoJSON,
+          });
+          map.addLayer({
+            id: "trail-glow",
+            type: "line",
+            source: "trail",
+            layout: { "line-join": "round", "line-cap": "round" },
+            paint: {
+              "line-color": "#fbbf24",
+              "line-width": 10,
+              "line-opacity": 0.45,
+            },
+          });
+          map.addLayer({
+            id: "trail-line",
+            type: "line",
+            source: "trail",
+            layout: { "line-join": "round", "line-cap": "round" },
+            paint: {
+              "line-color": "#ea580c",
+              "line-width": 4,
+              "line-opacity": 0.95,
+            },
+          });
+        }
 
         const start = routeCoordinates[0];
         const end = routeCoordinates[LAST_IDX];
@@ -329,24 +263,70 @@ export default function Mapbox3DTrail() {
           .setPopup(new mapboxgl.Popup().setHTML("<strong>FINISH</strong><br/>Bluff Knoll Car Park"))
           .addTo(map);
 
-        const el = document.createElement("div");
-        el.className = "walker-marker";
-        el.style.cssText =
-          "width:18px;height:18px;background:#3b82f6;border:3px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.4);";
-        markerRef.current = new mapboxgl.Marker(el)
-          .setLngLat(start as [number, number])
-          .addTo(map);
+        if (!markerRef.current) {
+          const el = document.createElement("div");
+          el.className = "walker-marker";
+          el.style.cssText =
+            "width:18px;height:18px;background:#3b82f6;border:3px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.4);";
+          markerRef.current = new mapboxgl.Marker(el)
+            .setLngLat(start as [number, number])
+            .addTo(map);
+        }
+      };
 
-        const bounds = new mapboxgl.LngLatBounds();
-        routeCoordinates.forEach(([lng, lat]) => bounds.extend([lng, lat]));
-        map.fitBounds(bounds, { padding: 60, pitch: 60, duration: 2000 });
+      const enableTerrain = () => {
+        if (map.getSource("mapbox-dem")) return;
+        setLoadStatus("Enhancing 3D terrain…");
+        map.addSource("mapbox-dem", {
+          type: "raster-dem",
+          url: "mapbox://mapbox.mapbox-terrain-dem-v1",
+          tileSize: 512,
+          maxzoom: 14,
+        });
+        map.setTerrain({ source: "mapbox-dem", exaggeration: 1.5 });
+        if (!map.getLayer("sky")) {
+          map.addLayer({
+            id: "sky",
+            type: "sky",
+            paint: {
+              "sky-type": "atmosphere",
+              "sky-atmosphere-sun": [0.0, 90.0],
+              "sky-atmosphere-sun-intensity": 15,
+            },
+          });
+        }
+        map.easeTo({ pitch: 60, duration: 900, essential: true });
+        setTerrainReady(true);
+        setLoadStatus("");
+      };
 
+      map.on("load", () => {
+        // Phase 1 — satellite + trail only (fast visible preview)
+        addTrailAndMarkers();
+        map.fitBounds(bounds, {
+          padding: 56,
+          pitch: 45,
+          bearing: -35,
+          duration: 0,
+        });
         setLoaded(true);
+        setLoadStatus("Satellite ready — building 3D…");
+
+        // Phase 2 — DEM after first idle (or 1.2s fallback) so imagery isn't blocked
+        let enhanced = false;
+        const enhance = () => {
+          if (enhanced) return;
+          enhanced = true;
+          enableTerrain();
+        };
+        map.once("idle", enhance);
+        window.setTimeout(enhance, 1200);
       });
 
       map.on("error", (e) => {
         console.error("Mapbox error:", e);
-        if (e.error?.message?.includes("access token") || e.error?.message?.includes("401")) {
+        const msg = e.error?.message || "";
+        if (msg.includes("access token") || msg.includes("401")) {
           setError("invalid-token");
         }
       });
@@ -421,9 +401,9 @@ export default function Mapbox3DTrail() {
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !loaded) return;
+    if (!map || !loaded || !terrainReady || !map.getSource("mapbox-dem")) return;
     map.setTerrain({ source: "mapbox-dem", exaggeration });
-  }, [exaggeration, loaded]);
+  }, [exaggeration, loaded, terrainReady]);
 
   useEffect(() => {
     pitchRef.current = pitch;
@@ -431,6 +411,76 @@ export default function Mapbox3DTrail() {
     if (!map || !loaded || isPlayingRef.current) return;
     map.easeTo({ pitch, duration: 250 });
   }, [pitch, loaded]);
+
+  // Contours are heavy — only add when user opts in
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !loaded) return;
+
+    const removeContours = () => {
+      if (map.getLayer("contour-labels")) map.removeLayer("contour-labels");
+      if (map.getLayer("contour-lines")) map.removeLayer("contour-lines");
+      if (map.getSource("contours")) map.removeSource("contours");
+    };
+
+    if (!showContours) {
+      removeContours();
+      return;
+    }
+
+    if (!map.getSource("contours")) {
+      map.addSource("contours", {
+        type: "vector",
+        url: "mapbox://mapbox.mapbox-terrain-v2",
+      });
+    }
+
+    if (!map.getLayer("contour-lines")) {
+      map.addLayer({
+        id: "contour-lines",
+        type: "line",
+        source: "contours",
+        "source-layer": "contour",
+        layout: { "line-join": "round", "line-cap": "round" },
+        paint: {
+          "line-color": "#ffffff",
+          "line-width": [
+            "interpolate",
+            ["linear"],
+            ["get", "ele"],
+            0, 0.25,
+            500, 0.4,
+            1000, 0.9,
+          ],
+          "line-opacity": 0.35,
+        },
+      });
+    }
+
+    if (!map.getLayer("contour-labels")) {
+      map.addLayer({
+        id: "contour-labels",
+        type: "symbol",
+        source: "contours",
+        "source-layer": "contour",
+        filter: ["==", ["%", ["get", "ele"], 100], 0],
+        layout: {
+          "symbol-placement": "line",
+          "text-field": ["concat", ["to-string", ["get", "ele"]], " m"],
+          "text-size": 10,
+          "text-max-angle": 25,
+          "text-allow-overlap": false,
+          visibility: isPlayingRef.current ? "none" : "visible",
+        },
+        paint: {
+          "text-color": "#ffffff",
+          "text-halo-color": "#000000",
+          "text-halo-width": 1,
+          "text-opacity": 0.65,
+        },
+      });
+    }
+  }, [loaded, showContours]);
 
   const speedRef = useRef(speed);
   useEffect(() => {
@@ -605,16 +655,33 @@ export default function Mapbox3DTrail() {
             />
             Camps
           </label>
+          <label className="flex items-center gap-1.5 text-xs cursor-pointer" title="Optional — can slow loading">
+            <input
+              type="checkbox"
+              checked={showContours}
+              onChange={(e) => setShowContours(e.target.checked)}
+              className="rounded"
+            />
+            Contours
+          </label>
         </div>
       </div>
 
       <div ref={mapContainer} className="w-full h-[500px] sm:h-[600px] relative bg-slate-800">
         {!loaded && !error && (
-          <div className="absolute inset-0 flex items-center justify-center text-white z-10">
-            <div className="text-center">
-              <div className="animate-pulse text-2xl mb-2">🏔️</div>
-              <div className="text-sm text-slate-300">Loading satellite terrain...</div>
+          <div className="absolute inset-0 flex items-center justify-center text-white z-10 bg-slate-900/70">
+            <div className="text-center px-4">
+              <div className="animate-pulse text-2xl mb-2">🛰️</div>
+              <div className="text-sm text-slate-200">{loadStatus}</div>
+              <div className="text-[11px] text-slate-400 mt-2">
+                Satellite imagery loads first, then 3D terrain
+              </div>
             </div>
+          </div>
+        )}
+        {loaded && !!loadStatus && (
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 px-3 py-1.5 rounded-full bg-black/70 text-white text-xs">
+            {loadStatus}
           </div>
         )}
       </div>
