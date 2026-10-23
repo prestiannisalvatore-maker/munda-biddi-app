@@ -7,12 +7,36 @@ import { routeCoordinates } from "@/data/routeCoordinates";
 import { peaks, campsites } from "@/data/stirlingRidgeData";
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
+const TRAIL_LEN = routeCoordinates.length;
+const LAST_IDX = TRAIL_LEN - 1;
+/** Full trail walk duration at 1× (seconds). */
+const BASE_DURATION_SEC = 45;
+/** How often to push progress into React for the scrubber UI. */
+const UI_UPDATE_MS = 100;
+/** Look ahead ~2–3 GPS samples (~80–150 m) for camera bearing. */
+const BEARING_LOOKAHEAD = 3;
+const PLAY_ZOOM = 13.5;
+
+function bearingBetween(i: number, j: number): number {
+  const [lng, lat] = routeCoordinates[i];
+  const [nextLng, nextLat] = routeCoordinates[j];
+  return (Math.atan2(nextLng - lng, nextLat - lat) * 180) / Math.PI;
+}
+
+function indexAtProgress(pct: number): number {
+  return Math.min(Math.max(Math.floor((pct / 100) * LAST_IDX), 0), LAST_IDX);
+}
 
 export default function Mapbox3DTrail() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markerRef = useRef<mapboxgl.Marker | null>(null);
   const animFrameRef = useRef<number | null>(null);
+  const progressRef = useRef(0);
+  const pitchRef = useRef(60);
+  const isPlayingRef = useRef(false);
+  const lastUiUpdateRef = useRef(0);
+  const lastBearingRef = useRef<number | null>(null);
 
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,6 +46,7 @@ export default function Mapbox3DTrail() {
   const [showPeaks, setShowPeaks] = useState(true);
   const [showCamps, setShowCamps] = useState(true);
   const [exaggeration, setExaggeration] = useState(1.5);
+  const [speed, setSpeed] = useState(1); // 1× / 2× / 3×
 
   const trailGeoJSON: GeoJSON.FeatureCollection = {
     type: "FeatureCollection",
@@ -37,43 +62,55 @@ export default function Mapbox3DTrail() {
     ],
   };
 
-  // Position camera along trail at given progress (0-1)
-  const flyToProgress = useCallback((pct: number, animate = true) => {
-    const map = mapRef.current;
-    if (!map || !loaded) return;
+  /** Move camera + walker marker. Prefer jumpTo during scrub/play for snappy feedback. */
+  const applyCamera = useCallback(
+    (pct: number, opts?: { animate?: boolean; duration?: number; zoom?: number }) => {
+      const map = mapRef.current;
+      if (!map) return;
 
-    const idx = Math.min(
-      Math.floor((pct / 100) * (routeCoordinates.length - 1)),
-      routeCoordinates.length - 1
-    );
-    const nextIdx = Math.min(idx + 5, routeCoordinates.length - 1);
-    const [lng, lat] = routeCoordinates[idx];
-    const [nextLng, nextLat] = routeCoordinates[nextIdx];
+      const idx = indexAtProgress(pct);
+      const look = Math.min(idx + BEARING_LOOKAHEAD, LAST_IDX);
+      let bearing = bearingBetween(idx, look);
 
-    // Bearing toward next points along trail
-    const bearing =
-      (Math.atan2(nextLng - lng, nextLat - lat) * 180) / Math.PI;
+      // Soften bearing jumps so the camera doesn't whip on switchbacks
+      const prev = lastBearingRef.current;
+      if (prev !== null) {
+        let delta = bearing - prev;
+        while (delta > 180) delta -= 360;
+        while (delta < -180) delta += 360;
+        bearing = prev + delta * 0.35;
+      }
+      lastBearingRef.current = bearing;
 
-    if (markerRef.current) {
-      markerRef.current.setLngLat([lng, lat]);
-    }
+      const [lng, lat] = routeCoordinates[idx];
+      markerRef.current?.setLngLat([lng, lat]);
 
-    if (animate) {
-      map.easeTo({
-        center: [lng, lat],
+      const camera = {
+        center: [lng, lat] as [number, number],
         bearing,
-        pitch,
-        duration: 400,
-        essential: true,
-      });
-    } else {
-      map.jumpTo({
-        center: [lng, lat],
-        bearing,
-        pitch,
-      });
-    }
-  }, [loaded, pitch]);
+        pitch: pitchRef.current,
+        zoom: opts?.zoom ?? map.getZoom(),
+      };
+
+      if (opts?.animate) {
+        map.easeTo({
+          ...camera,
+          duration: opts.duration ?? 350,
+          essential: true,
+        });
+      } else {
+        map.jumpTo(camera);
+      }
+    },
+    []
+  );
+
+  const syncProgressUi = useCallback((pct: number, force = false) => {
+    const now = performance.now();
+    if (!force && now - lastUiUpdateRef.current < UI_UPDATE_MS) return;
+    lastUiUpdateRef.current = now;
+    setProgress(pct);
+  }, []);
 
   // Initialize Mapbox
   useEffect(() => {
@@ -95,6 +132,8 @@ export default function Mapbox3DTrail() {
         pitch: 60,
         bearing: -45,
         antialias: true,
+        // Prefer responsiveness over maximum terrain detail while flying
+        fadeDuration: 0,
       });
 
       map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), "top-right");
@@ -105,7 +144,6 @@ export default function Mapbox3DTrail() {
       );
 
       map.on("load", () => {
-        // 3D terrain
         map.addSource("mapbox-dem", {
           type: "raster-dem",
           url: "mapbox://mapbox.mapbox-terrain-dem-v1",
@@ -114,7 +152,6 @@ export default function Mapbox3DTrail() {
         });
         map.setTerrain({ source: "mapbox-dem", exaggeration: 1.5 });
 
-        // Sky atmosphere for depth
         map.addLayer({
           id: "sky",
           type: "sky",
@@ -125,7 +162,6 @@ export default function Mapbox3DTrail() {
           },
         });
 
-        // Contour lines from terrain vector tiles
         map.addSource("contours", {
           type: "vector",
           url: "mapbox://mapbox.mapbox-terrain-v2",
@@ -175,13 +211,11 @@ export default function Mapbox3DTrail() {
           },
         });
 
-        // Full GPX trail (all 1514 points)
         map.addSource("trail", {
           type: "geojson",
           data: trailGeoJSON,
         });
 
-        // Trail glow underlay
         map.addLayer({
           id: "trail-glow",
           type: "line",
@@ -197,7 +231,6 @@ export default function Mapbox3DTrail() {
           },
         });
 
-        // Main trail line
         map.addLayer({
           id: "trail-line",
           type: "line",
@@ -213,9 +246,8 @@ export default function Mapbox3DTrail() {
           },
         });
 
-        // Start / end markers
         const start = routeCoordinates[0];
-        const end = routeCoordinates[routeCoordinates.length - 1];
+        const end = routeCoordinates[LAST_IDX];
 
         new mapboxgl.Marker({ color: "#16a34a" })
           .setLngLat(start as [number, number])
@@ -227,7 +259,6 @@ export default function Mapbox3DTrail() {
           .setPopup(new mapboxgl.Popup().setHTML("<strong>FINISH</strong><br/>Bluff Knoll Car Park"))
           .addTo(map);
 
-        // Walker position marker
         const el = document.createElement("div");
         el.className = "walker-marker";
         el.style.cssText =
@@ -236,7 +267,6 @@ export default function Mapbox3DTrail() {
           .setLngLat(start as [number, number])
           .addTo(map);
 
-        // Fit to trail
         const bounds = new mapboxgl.LngLatBounds();
         routeCoordinates.forEach(([lng, lat]) => bounds.extend([lng, lat]));
         map.fitBounds(bounds, { padding: 60, pitch: 60, duration: 2000 });
@@ -270,7 +300,6 @@ export default function Mapbox3DTrail() {
     const map = mapRef.current;
     if (!map || !loaded) return;
 
-    // Remove existing peak markers by class
     document.querySelectorAll(".peak-mb-marker").forEach((el) => el.remove());
 
     if (!showPeaks) return;
@@ -327,50 +356,97 @@ export default function Mapbox3DTrail() {
     map.setTerrain({ source: "mapbox-dem", exaggeration });
   }, [exaggeration, loaded]);
 
-  // Play animation along trail
   useEffect(() => {
-    if (!isPlaying) {
-      if (animFrameRef.current) {
-        cancelAnimationFrame(animFrameRef.current);
-        animFrameRef.current = null;
-      }
-      return;
+    pitchRef.current = pitch;
+    const map = mapRef.current;
+    if (!map || !loaded || isPlayingRef.current) return;
+    map.easeTo({ pitch, duration: 200 });
+  }, [pitch, loaded]);
+
+  // Keep play speed available to the RAF loop without restarting it
+  const speedRef = useRef(speed);
+  useEffect(() => {
+    speedRef.current = speed;
+  }, [speed]);
+
+  const stopPlayback = useCallback(() => {
+    isPlayingRef.current = false;
+    setIsPlaying(false);
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+  }, []);
+
+  const startPlayback = useCallback(() => {
+    const map = mapRef.current;
+    if (!map || !loaded) return;
+
+    // Cancel any in-flight ease/fit so play starts immediately
+    map.stop();
+
+    let startPct = progressRef.current;
+    if (startPct >= 99.5) {
+      startPct = 0;
+      progressRef.current = 0;
+      lastBearingRef.current = null;
+      syncProgressUi(0, true);
     }
 
-    let last = performance.now();
-    const speed = 2.5; // percent per second
+    // Snap into fly-along framing right away
+    applyCamera(startPct, { zoom: PLAY_ZOOM });
 
+    isPlayingRef.current = true;
+    setIsPlaying(true);
+
+    let last = performance.now();
     const tick = (now: number) => {
-      const dt = (now - last) / 1000;
+      if (!isPlayingRef.current) return;
+
+      const dt = Math.min((now - last) / 1000, 0.05); // clamp large tab-resume gaps
       last = now;
-      setProgress((prev) => {
-        const next = prev + speed * dt;
-        if (next >= 100) {
-          setIsPlaying(false);
-          return 100;
-        }
-        return next;
-      });
+
+      const rate = (100 / BASE_DURATION_SEC) * speedRef.current;
+      const next = progressRef.current + rate * dt;
+
+      if (next >= 100) {
+        progressRef.current = 100;
+        applyCamera(100, { zoom: PLAY_ZOOM });
+        syncProgressUi(100, true);
+        stopPlayback();
+        return;
+      }
+
+      progressRef.current = next;
+      applyCamera(next, { zoom: PLAY_ZOOM });
+      syncProgressUi(next);
+
       animFrameRef.current = requestAnimationFrame(tick);
     };
 
     animFrameRef.current = requestAnimationFrame(tick);
-    return () => {
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-    };
-  }, [isPlaying]);
+  }, [loaded, applyCamera, syncProgressUi, stopPlayback]);
 
-  // Sync camera when progress changes
-  useEffect(() => {
-    if (loaded) flyToProgress(progress, !isPlaying);
-  }, [progress, loaded, flyToProgress, isPlaying]);
+  const togglePlay = useCallback(() => {
+    if (isPlayingRef.current) {
+      stopPlayback();
+      syncProgressUi(progressRef.current, true);
+      return;
+    }
+    startPlayback();
+  }, [startPlayback, stopPlayback, syncProgressUi]);
 
-  // Update pitch on map
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !loaded) return;
-    map.easeTo({ pitch, duration: 300 });
-  }, [pitch, loaded]);
+  const onScrub = useCallback(
+    (value: number) => {
+      stopPlayback();
+      mapRef.current?.stop();
+      progressRef.current = value;
+      lastBearingRef.current = null;
+      setProgress(value);
+      applyCamera(value);
+    },
+    [applyCamera, stopPlayback]
+  );
 
   if (error === "missing-token" || error === "invalid-token") {
     return (
@@ -415,7 +491,7 @@ export default function Mapbox3DTrail() {
     );
   }
 
-  const pointIdx = Math.floor((progress / 100) * (routeCoordinates.length - 1));
+  const pointIdx = indexAtProgress(progress);
 
   return (
     <div className="rounded-xl overflow-hidden border border-slate-200 shadow-lg">
@@ -426,7 +502,7 @@ export default function Mapbox3DTrail() {
           <div>
             <div className="font-semibold text-sm">3D Trail Preview</div>
             <div className="text-[10px] text-slate-400">
-              {routeCoordinates.length.toLocaleString()} GPS points · Satellite + Terrain
+              {TRAIL_LEN.toLocaleString()} GPS points · Satellite + Terrain
             </div>
           </div>
         </div>
@@ -469,7 +545,7 @@ export default function Mapbox3DTrail() {
       <div className="bg-slate-900 text-white px-4 py-4 space-y-3">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setIsPlaying(!isPlaying)}
+            onClick={togglePlay}
             disabled={!loaded}
             className="w-12 h-12 rounded-full bg-orange-500 hover:bg-orange-600 disabled:opacity-40 flex items-center justify-center text-xl font-bold shadow-lg transition-colors"
             title={isPlaying ? "Pause" : "Walk the trail"}
@@ -481,7 +557,7 @@ export default function Mapbox3DTrail() {
             <div className="flex justify-between text-xs text-slate-400 mb-1">
               <span>Gnowellen Rd (Start)</span>
               <span className="text-orange-400 font-mono">
-                Point {pointIdx + 1}/{routeCoordinates.length}
+                Point {pointIdx + 1}/{TRAIL_LEN}
               </span>
               <span>Bluff Knoll (Finish)</span>
             </div>
@@ -491,10 +567,7 @@ export default function Mapbox3DTrail() {
               max={100}
               step={0.1}
               value={progress}
-              onChange={(e) => {
-                setIsPlaying(false);
-                setProgress(parseFloat(e.target.value));
-              }}
+              onChange={(e) => onScrub(parseFloat(e.target.value))}
               disabled={!loaded}
               className="w-full accent-orange-500"
             />
@@ -529,30 +602,57 @@ export default function Mapbox3DTrail() {
             />
             <span className="text-slate-500">{exaggeration.toFixed(1)}x</span>
           </div>
-          <button
-            onClick={() => {
-              setIsPlaying(false);
-              setProgress(0);
-            }}
-            disabled={!loaded}
-            className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg disabled:opacity-40"
-          >
-            ↺ Restart
-          </button>
-          <button
-            onClick={() => {
-              const map = mapRef.current;
-              if (!map) return;
-              const bounds = new mapboxgl.LngLatBounds();
-              routeCoordinates.forEach(([lng, lat]) => bounds.extend([lng, lat]));
-              map.fitBounds(bounds, { padding: 60, pitch: 60, duration: 1500 });
-              setIsPlaying(false);
-            }}
-            disabled={!loaded}
-            className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg disabled:opacity-40"
-          >
-            🔭 Full Trail
-          </button>
+          <div>
+            <label className="text-slate-400 block mb-1">Play speed</label>
+            <div className="flex gap-1">
+              {[1, 2, 3].map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setSpeed(s)}
+                  disabled={!loaded}
+                  className={`flex-1 py-2 rounded-lg disabled:opacity-40 ${
+                    speed === s
+                      ? "bg-orange-500 text-white"
+                      : "bg-slate-700 hover:bg-slate-600"
+                  }`}
+                >
+                  {s}×
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex flex-col gap-1">
+            <button
+              onClick={() => {
+                stopPlayback();
+                mapRef.current?.stop();
+                progressRef.current = 0;
+                lastBearingRef.current = null;
+                setProgress(0);
+                applyCamera(0, { animate: true, duration: 500, zoom: PLAY_ZOOM });
+              }}
+              disabled={!loaded}
+              className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg disabled:opacity-40"
+            >
+              ↺ Restart
+            </button>
+            <button
+              onClick={() => {
+                stopPlayback();
+                const map = mapRef.current;
+                if (!map) return;
+                map.stop();
+                const bounds = new mapboxgl.LngLatBounds();
+                routeCoordinates.forEach(([lng, lat]) => bounds.extend([lng, lat]));
+                map.fitBounds(bounds, { padding: 60, pitch: pitchRef.current, duration: 1200 });
+              }}
+              disabled={!loaded}
+              className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg disabled:opacity-40"
+            >
+              🔭 Full Trail
+            </button>
+          </div>
         </div>
 
         <p className="text-[11px] text-slate-500 text-center">
