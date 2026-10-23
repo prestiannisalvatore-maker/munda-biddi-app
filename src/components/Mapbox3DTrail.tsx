@@ -15,8 +15,12 @@ const BASE_DURATION_SEC = 160;
 const UI_UPDATE_MS = 150;
 /** Look ahead ~8 GPS samples (~300–400 m) for stable camera bearing. */
 const BEARING_LOOKAHEAD = 8;
-/** Keep play zoom modest so imagery tiles can keep up. */
-const PLAY_ZOOM = 12.75;
+/** Default framing when ▶ starts (user can still pinch/scroll to zoom further). */
+const PLAY_ZOOM = 13.25;
+/** Closest useful satellite detail for this Esri imagery. */
+const MAX_ZOOM = 18;
+const MIN_ZOOM = 9;
+const DETAIL_ZOOM = 16.5;
 /** Camera follow smoothing (lower = smoother / less snappy). */
 const CENTER_SMOOTH = 0.12;
 const BEARING_SMOOTH = 0.08;
@@ -256,6 +260,8 @@ export default function Mapbox3DTrail() {
         antialias: true,
         fadeDuration: 0,
         maxPitch: 80,
+        minZoom: MIN_ZOOM,
+        maxZoom: MAX_ZOOM,
         preserveDrawingBuffer: false,
       });
 
@@ -625,11 +631,13 @@ export default function Mapbox3DTrail() {
       syncProgressUi(0, true);
     }
 
-    // Seed smoother from the current trail sample, then glide
+    // Seed smoother from the current trail sample, then glide.
+    // Set play framing once — do NOT re-clamp zoom every frame (that blocked zooming in).
     const seed = sampleTrail(startPct);
     smoothCenterRef.current = { lng: seed.lng, lat: seed.lat };
     smoothBearingRef.current = seed.bearing;
-    applyCamera(startPct, { zoom: PLAY_ZOOM, smooth: false });
+    const startZoom = Math.max(map.getZoom(), PLAY_ZOOM);
+    applyCamera(startPct, { zoom: startZoom, smooth: false });
 
     isPlayingRef.current = true;
     setIsPlaying(true);
@@ -646,14 +654,15 @@ export default function Mapbox3DTrail() {
 
       if (next >= 100) {
         progressRef.current = 100;
-        applyCamera(100, { zoom: PLAY_ZOOM, smooth: true });
+        applyCamera(100, { smooth: true });
         syncProgressUi(100, true);
         stopPlayback();
         return;
       }
 
       progressRef.current = next;
-      applyCamera(next, { zoom: PLAY_ZOOM, smooth: true });
+      // Preserve whatever zoom the user set with scroll/pinch/+-
+      applyCamera(next, { smooth: true });
       syncProgressUi(next);
 
       animFrameRef.current = requestAnimationFrame(tick);
@@ -885,6 +894,60 @@ export default function Mapbox3DTrail() {
             </div>
           </div>
           <div className="flex flex-col gap-1">
+            <div className="flex gap-1">
+              <button
+                type="button"
+                onClick={() => {
+                  const map = mapRef.current;
+                  if (!map) return;
+                  map.easeTo({
+                    zoom: Math.min(MAX_ZOOM, map.getZoom() + 1),
+                    duration: 300,
+                    essential: true,
+                  });
+                }}
+                disabled={!loaded}
+                className="flex-1 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg disabled:opacity-40"
+                title="Zoom in"
+              >
+                ＋
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const map = mapRef.current;
+                  if (!map) return;
+                  map.easeTo({
+                    zoom: Math.max(MIN_ZOOM, map.getZoom() - 1),
+                    duration: 300,
+                    essential: true,
+                  });
+                }}
+                disabled={!loaded}
+                className="flex-1 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg disabled:opacity-40"
+                title="Zoom out"
+              >
+                －
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const map = mapRef.current;
+                  if (!map) return;
+                  map.easeTo({
+                    zoom: DETAIL_ZOOM,
+                    pitch: Math.min(pitchRef.current, 55),
+                    duration: 500,
+                    essential: true,
+                  });
+                }}
+                disabled={!loaded}
+                className="flex-1 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg disabled:opacity-40"
+                title="Zoom in for more satellite detail"
+              >
+                Detail
+              </button>
+            </div>
             <button
               onClick={() => {
                 stopPlayback();
@@ -918,8 +981,8 @@ export default function Mapbox3DTrail() {
         </div>
 
         <p className="text-[11px] text-slate-500 text-center">
-          Drag to look around · Pinch/scroll to zoom · ▶ flies the ridge slowly over satellite imagery
-          (default 0.5×)
+          Scroll / pinch or use ＋ － / Detail to zoom (up to ~street-level satellite) · ▶ keeps your
+          zoom while flying
         </p>
       </div>
     </div>
