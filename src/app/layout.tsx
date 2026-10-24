@@ -1,6 +1,16 @@
 import type { Metadata, Viewport } from "next";
+import { Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
+
+// Self-hosted at build time — no Google Fonts request in airplane mode
+const sourceSans = Source_Sans_3({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  variable: "--font-sans",
+});
 
 export const metadata: Metadata = {
   title: "Stirling Ridge Walk | Western Australia Hiking Guide",
@@ -21,6 +31,9 @@ export const metadata: Metadata = {
       { url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
     ],
   },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
 };
 
 export const viewport: Viewport = {
@@ -37,14 +50,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Pacifico&family=Inter:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body className="min-h-screen bg-slate-50 antialiased flex flex-col">
+    <html lang="en" className={sourceSans.variable}>
+      <body
+        className={`${sourceSans.className} min-h-screen bg-slate-50 antialiased flex flex-col`}
+      >
+        <ServiceWorkerRegister />
         <div className="bg-amber-700 text-white text-center py-2 text-sm">
           Built by <span className="font-semibold">Salvatore Prestianni</span>
         </div>

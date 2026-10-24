@@ -169,13 +169,18 @@ export default function OfflineManager({ onClose }: OfflineManagerProps) {
       {/* Instructions */}
       <div className="bg-blue-50 rounded-lg p-4 mb-4 text-sm text-blue-800">
         <p className="mb-2">
-          <strong>How offline mode works:</strong>
+          <strong>How offline maps work:</strong>
         </p>
         <ol className="list-decimal pl-5 space-y-1">
-          <li>Download map tiles while you have internet</li>
-          <li>Add this app to your iPhone home screen</li>
-          <li>The app and map will work in airplane mode</li>
-          <li>GPS tracking works without internet!</li>
+          <li>
+            First install the app via Safari → Share → <strong>Add to Home Screen</strong>{" "}
+            (while online)
+          </li>
+          <li>Download map tiles below while you have internet</li>
+          <li>
+            In Airplane Mode, open from the <strong>Home Screen icon</strong> (not a Safari tab)
+          </li>
+          <li>GPS tracking works without internet</li>
         </ol>
       </div>
 
