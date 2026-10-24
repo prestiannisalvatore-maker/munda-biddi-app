@@ -2,7 +2,8 @@ const defaultCache = require("next-pwa/cache");
 
 const withPWA = require("next-pwa")({
   dest: "public",
-  register: true,
+  // App Router: register from ServiceWorkerRegister client component instead
+  register: false,
   skipWaiting: true,
   // Cache Next.js client navigations so tabs visited online work offline
   cacheOnFrontEndNav: true,
