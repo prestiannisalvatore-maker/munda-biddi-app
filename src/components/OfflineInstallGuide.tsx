@@ -40,7 +40,11 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
 
 async function warmOfflineCaches(): Promise<{ ok: boolean; cached: number; detail: string }> {
   if (!("caches" in window)) {
-    return { ok: false, cached: 0, detail: "This browser blocks offline storage (try non-Private Safari)." };
+    return {
+      ok: false,
+      cached: 0,
+      detail: "Offline storage blocked — leave Private Browsing.",
+    };
   }
   if (!navigator.onLine) {
     return { ok: false, cached: 0, detail: "Go online to cache pages first." };
@@ -51,8 +55,6 @@ async function warmOfflineCaches(): Promise<{ ok: boolean; cached: number; detai
   const assets = await caches.open("static-assets");
 
   let okCount = 0;
-  const failed: string[] = [];
-
   for (const path of PAGE_ROUTES) {
     try {
       const res = await fetch(path, {
@@ -60,10 +62,7 @@ async function warmOfflineCaches(): Promise<{ ok: boolean; cached: number; detai
         headers: { Accept: "text/html" },
         cache: "no-cache",
       });
-      if (!res.ok) {
-        failed.push(`${path} (${res.status})`);
-        continue;
-      }
+      if (!res.ok) continue;
       const body = await res.blob();
       const stored = new Response(body, {
         status: 200,
@@ -77,7 +76,7 @@ async function warmOfflineCaches(): Promise<{ ok: boolean; cached: number; detai
       }
       okCount += 1;
     } catch {
-      failed.push(path);
+      /* keep going */
     }
   }
 
@@ -101,50 +100,90 @@ async function warmOfflineCaches(): Promise<{ ok: boolean; cached: number; detai
   if (okCount >= 3) {
     return { ok: true, cached: okCount, detail: `Cached ${okCount} pages.` };
   }
-  return {
-    ok: false,
-    cached: okCount,
-    detail: `Only cached ${okCount} pages.${failed.length ? ` Failed: ${failed.slice(0, 3).join(", ")}` : ""}`,
-  };
+  return { ok: false, cached: okCount, detail: `Only cached ${okCount} pages.` };
 }
 
 async function ensureServiceWorker(): Promise<{ ready: boolean; detail: string }> {
   if (!("serviceWorker" in navigator)) {
     return {
       ready: false,
-      detail: "Service workers unavailable — turn off Private Browsing and use Safari.",
+      detail: "Service workers unavailable — use Safari, not Private mode.",
     };
   }
 
   try {
+    // Remove broken registrations left by the old 404 precache bug
+    const regs = await navigator.serviceWorker.getRegistrations();
+    for (const reg of regs) {
+      if (!reg.active) {
+        await reg.unregister();
+      }
+    }
+
     const reg = await withTimeout(
       navigator.serviceWorker.register("/sw.js", {
         scope: "/",
         updateViaCache: "none",
       }),
-      15000,
+      20000,
       "Service worker register"
     );
 
-    // Prefer an active worker; don't hang forever on .ready
-    if (reg.active) {
+    // Wait for activate (install can take a few seconds on cellular)
+    const active = await new Promise<ServiceWorker | null>((resolve) => {
+      if (reg.active) {
+        resolve(reg.active);
+        return;
+      }
+      const worker = reg.installing || reg.waiting;
+      if (!worker) {
+        resolve(null);
+        return;
+      }
+      const onChange = () => {
+        if (worker.state === "activated" || reg.active) {
+          worker.removeEventListener("statechange", onChange);
+          resolve(reg.active || worker);
+        } else if (worker.state === "redundant") {
+          worker.removeEventListener("statechange", onChange);
+          resolve(null);
+        }
+      };
+      worker.addEventListener("statechange", onChange);
+      window.setTimeout(() => {
+        worker.removeEventListener("statechange", onChange);
+        resolve(reg.active);
+      }, 25000);
+    });
+
+    if (active || reg.active || navigator.serviceWorker.controller) {
       return { ready: true, detail: "Offline engine active." };
     }
 
-    const readyReg = await withTimeout(
-      navigator.serviceWorker.ready,
-      20000,
-      "Service worker ready"
-    );
-    if (readyReg.active || readyReg.installing || readyReg.waiting) {
-      return { ready: true, detail: "Offline engine ready." };
+    // Last chance: ready promise with timeout
+    try {
+      const readyReg = await withTimeout(
+        navigator.serviceWorker.ready,
+        10000,
+        "Service worker ready"
+      );
+      if (readyReg.active) {
+        return { ready: true, detail: "Offline engine ready." };
+      }
+    } catch {
+      /* fall through */
     }
-    return { ready: false, detail: "Service worker registered but not active yet — tap Retry." };
+
+    return {
+      ready: false,
+      detail:
+        "Offline engine installed but not active yet. Tap Retry, or Settings → Safari → Clear History and Website Data for this site, then reload.",
+    };
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Registration failed";
     return {
       ready: false,
-      detail: `${msg}. Try Safari (not Chrome), leave Private mode, then tap Retry.`,
+      detail: `${msg}. Use Safari (not Chrome), leave Private mode, then tap Retry.`,
     };
   }
 }
@@ -179,28 +218,31 @@ export default function OfflineInstallGuide() {
 
   const prepareOffline = useCallback(async () => {
     setBusy(true);
-    setStatus("Registering offline engine…");
-
-    const sw = await ensureServiceWorker();
-    setSwReady(sw.ready);
-    setStatus(sw.detail);
 
     if (!navigator.onLine) {
       setBusy(false);
-      setStatus("Go online first, then tap Retry cache.");
+      setStatus("Go online first, then tap Retry.");
       return;
     }
 
+    // Cache pages first so that badge can go green even while SW activates
     setCaching(true);
-    setStatus("Caching app pages for Airplane Mode…");
+    setStatus("Caching app pages…");
     const result = await warmOfflineCaches();
     setCached(result.ok);
     setCaching(false);
-    setStatus(
-      sw.ready
-        ? result.detail
-        : `${result.detail} (${sw.detail})`
-    );
+
+    setStatus("Starting offline engine…");
+    const sw = await ensureServiceWorker();
+    setSwReady(sw.ready);
+
+    if (sw.ready && result.ok) {
+      setStatus(`${result.detail} Offline engine ready — you can Add to Home Screen.`);
+    } else if (result.ok && !sw.ready) {
+      setStatus(`${result.detail} But ${sw.detail}`);
+    } else {
+      setStatus(`${result.detail} ${sw.detail}`);
+    }
     setBusy(false);
   }, []);
 
@@ -217,26 +259,29 @@ export default function OfflineInstallGuide() {
           Use this app offline on iPhone
         </h2>
         <p className="text-amber-900 text-sm mt-1">
-          Airplane Mode in a Safari tab always fails with &quot;not connected&quot;.
-          Offline only works from the Home Screen icon after the badges below are green.
+          Airplane Mode in a Safari tab always fails. You need the Home Screen
+          icon after both <strong>Offline engine</strong> and{" "}
+          <strong>Pages cached</strong> are green.
         </p>
       </div>
 
       <div className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-900">
-        <strong>Must use Safari</strong> (not Chrome / Instagram / Facebook browser),
-        and not Private Browsing. Private mode blocks the offline engine.
+        Use <strong>Safari</strong> (not Chrome), not Private Browsing. After this
+        update, tap <strong>Retry</strong> once so the fixed offline engine can
+        install.
       </div>
 
       <ol className="list-decimal pl-5 space-y-2 text-sm text-amber-950">
         <li>
-          Stay online in <strong>Safari</strong> on{" "}
+          Stay online on{" "}
           <span className="font-mono text-xs bg-amber-100 px-1 rounded">
             munda-biddi-app.vercel.app
-          </span>
+          </span>{" "}
+          in Safari
         </li>
         <li>
-          Wait for <strong>Offline engine</strong> and <strong>Pages cached</strong>{" "}
-          to turn green (tap <strong>Retry cache</strong> if they stay grey).
+          Tap <strong>Retry</strong> below — wait for Offline engine + Pages cached
+          green
         </li>
         <li>
           Share{" "}
@@ -245,16 +290,9 @@ export default function OfflineInstallGuide() {
           </span>{" "}
           → <strong>Add to Home Screen</strong>
         </li>
-        <li>
-          Open the <strong>Home Screen icon</strong> while still online — that badge
-          should say &quot;Opened from Home Screen&quot;
-        </li>
-        <li>
-          Tap Home, Trail Map, Help, Checklist once; on Help download map tiles
-        </li>
-        <li>
-          Airplane Mode → open from the Home Screen icon only
-        </li>
+        <li>Open the Home Screen icon while still online</li>
+        <li>Visit Map / Help / Checklist; download map tiles on Help</li>
+        <li>Airplane Mode → open from the Home Screen icon only</li>
       </ol>
 
       <div className="flex flex-wrap gap-2 text-xs">
@@ -310,7 +348,7 @@ export default function OfflineInstallGuide() {
         disabled={busy || !online}
         className="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-amber-700 text-white text-sm font-semibold disabled:opacity-50"
       >
-        {busy ? "Working…" : "Retry cache"}
+        {busy ? "Working…" : "Retry"}
       </button>
 
       {readyForAirplane ? (
@@ -319,16 +357,10 @@ export default function OfflineInstallGuide() {
         </p>
       ) : (
         <p className="text-sm text-amber-900">
-          You need green on <strong>Offline engine</strong> and{" "}
-          <strong>Pages cached</strong>. The Safari-tab badge stays amber until you
-          open the Home Screen icon — that is normal.
+          Need green on Offline engine + Pages cached. Safari-tab amber is normal
+          until you open the Home Screen icon.
         </p>
       )}
-
-      <p className="text-[11px] text-amber-800">
-        GPS still works in Airplane Mode if Location Services are on. The 3D
-        Preview needs internet.
-      </p>
     </div>
   );
 }

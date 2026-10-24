@@ -5,6 +5,7 @@ const withPWA = require("next-pwa")({
   // App Router: register from ServiceWorkerRegister client component instead
   register: false,
   skipWaiting: true,
+  clientsClaim: true,
   // Cache Next.js client navigations so tabs visited online work offline
   cacheOnFrontEndNav: true,
   // Don't force-reload when connectivity returns (disrupts field use)
@@ -14,10 +15,18 @@ const withPWA = require("next-pwa")({
   fallbacks: {
     document: "/offline.html",
   },
+  // App Router emits app-build-manifest.json into the Workbox precache, but
+  // Vercel does not serve that file (404). One missing precache URL makes the
+  // whole service worker fail to install on iPhone — badges hang forever.
+  buildExcludes: [
+    /app-build-manifest\.json$/,
+    /middleware-manifest\.json$/,
+    /server\/app\/.*\/page_client-reference-manifest\.js$/,
+  ],
   // Precache shell assets needed before any runtime visit
   additionalManifestEntries: [
-    { url: "/offline.html", revision: "ios-offline-v2" },
-    { url: "/manifest.json", revision: "ios-offline-v2" },
+    { url: "/offline.html", revision: "ios-offline-v3" },
+    { url: "/manifest.json", revision: "ios-offline-v3" },
   ],
   runtimeCaching: [
     // Cache full page navigations (critical for iPhone airplane mode)
