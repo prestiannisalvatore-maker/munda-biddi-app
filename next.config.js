@@ -4,11 +4,20 @@ const withPWA = require("next-pwa")({
   dest: "public",
   register: true,
   skipWaiting: true,
+  // Cache Next.js client navigations so tabs visited online work offline
+  cacheOnFrontEndNav: true,
+  // Don't force-reload when connectivity returns (disrupts field use)
+  reloadOnOnline: false,
   disable: process.env.NODE_ENV === "development",
   // Serve offline.html when a page isn't in cache and the network is down
   fallbacks: {
     document: "/offline.html",
   },
+  // Precache shell assets needed before any runtime visit
+  additionalManifestEntries: [
+    { url: "/offline.html", revision: "ios-offline-v2" },
+    { url: "/manifest.json", revision: "ios-offline-v2" },
+  ],
   runtimeCaching: [
     // Cache full page navigations (critical for iPhone airplane mode)
     {
