@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <title>Offline - Stirling Ridge Walk</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -18,60 +19,70 @@
     .container {
       background: white;
       border-radius: 16px;
-      padding: 40px;
-      max-width: 400px;
-      text-align: center;
+      padding: 32px 28px;
+      max-width: 420px;
+      text-align: left;
       box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     }
-    .icon { font-size: 64px; margin-bottom: 20px; }
-    h1 { color: #1e293b; margin-bottom: 12px; font-size: 24px; }
-    p { color: #64748b; margin-bottom: 24px; line-height: 1.6; }
+    .icon { font-size: 48px; margin-bottom: 12px; text-align: center; }
+    h1 { color: #1e293b; margin-bottom: 10px; font-size: 22px; text-align: center; }
+    p { color: #64748b; margin-bottom: 16px; line-height: 1.55; font-size: 15px; }
     .tip {
       background: #fef3c7;
       border: 1px solid #fcd34d;
       border-radius: 8px;
-      padding: 16px;
-      text-align: left;
+      padding: 14px;
       font-size: 14px;
     }
     .tip h3 { color: #92400e; margin-bottom: 8px; }
-    .tip ul { color: #78350f; padding-left: 20px; }
-    .tip li { margin: 4px 0; }
-    .retry-btn {
-      display: inline-block;
-      margin-top: 20px;
-      padding: 12px 24px;
+    .tip ol { color: #78350f; padding-left: 20px; }
+    .tip li { margin: 6px 0; }
+    .links { margin-top: 18px; display: grid; gap: 8px; }
+    .links a {
+      display: block;
+      text-align: center;
+      padding: 12px 16px;
       background: #b45309;
       color: white;
-      border: none;
       border-radius: 8px;
-      font-size: 16px;
       font-weight: 600;
-      cursor: pointer;
       text-decoration: none;
     }
-    .retry-btn:hover { background: #92400e; }
+    .links a.secondary { background: #334155; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="icon">🏔️</div>
-    <h1>You're Offline</h1>
-    <p>No worries - the Stirling Ridge Walk app works offline once cached!</p>
-    
+    <h1>You're offline</h1>
+    <p>
+      This screen appears if the page you opened was not cached yet.
+      On iPhone, install the app to your Home Screen <strong>while online</strong>,
+      then reopen it from that icon in Airplane Mode.
+    </p>
+
     <div class="tip">
-      <h3>💡 Offline Tips:</h3>
-      <ul>
-        <li>Open the app while online first to cache it</li>
-        <li>Browse the map to cache tiles for your route</li>
-        <li>Download the GPX file to your device</li>
-        <li>Use the GPS feature - it works without internet!</li>
-      </ul>
+      <h3>Make it work offline</h3>
+      <ol>
+        <li>Connect to Wi‑Fi and open the site in Safari</li>
+        <li>Share → Add to Home Screen</li>
+        <li>Open Home, Map, Help, Checklist once online</li>
+        <li>On Help: Download Map for Offline Use</li>
+        <li>Airplane Mode → open from the Home Screen icon</li>
+      </ol>
     </div>
-    
-    <button class="retry-btn" onclick="window.location.reload()">
-      Try Again
-    </button>
+
+    <div class="links">
+      <a href="/">Open Home</a>
+      <a class="secondary" href="/map">Open Trail Map</a>
+      <a class="secondary" href="/help">Open Help</a>
+    </div>
   </div>
+  <script>
+    // If pages are already cached, try Home automatically when online again
+    window.addEventListener('online', function () {
+      location.href = '/';
+    });
+  </script>
 </body>
 </html>

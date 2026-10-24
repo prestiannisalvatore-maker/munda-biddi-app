@@ -1,30 +1,49 @@
+const defaultCache = require("next-pwa/cache");
+
 const withPWA = require("next-pwa")({
   dest: "public",
   register: true,
   skipWaiting: true,
   disable: process.env.NODE_ENV === "development",
+  // Serve offline.html when a page isn't in cache and the network is down
+  fallbacks: {
+    document: "/offline.html",
+  },
   runtimeCaching: [
+    // Cache full page navigations (critical for iPhone airplane mode)
     {
-      // Cache app pages
-      urlPattern: /^https?:\/\/.*\/_next\/.*$/,
-      handler: "CacheFirst",
+      urlPattern: ({ request }) => request.mode === "navigate",
+      handler: "NetworkFirst",
       options: {
-        cacheName: "next-assets",
+        cacheName: "pages",
+        networkTimeoutSeconds: 3,
         expiration: {
-          maxEntries: 200,
-          maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
+          maxEntries: 48,
+          maxAgeSeconds: 30 * 24 * 60 * 60,
         },
       },
     },
     {
-      // Cache OpenTopoMap tiles for offline use
-      urlPattern: /^https:\/\/[abc]\.tile\.opentopomap\.org\/.*$/,
+      // Next.js build assets
+      urlPattern: /\/_next\/static\/.*/i,
+      handler: "CacheFirst",
+      options: {
+        cacheName: "next-static",
+        expiration: {
+          maxEntries: 200,
+          maxAgeSeconds: 365 * 24 * 60 * 60,
+        },
+      },
+    },
+    {
+      // OpenTopoMap tiles for offline Trail Map
+      urlPattern: /^https:\/\/[abc]\.tile\.opentopomap\.org\/.*/i,
       handler: "CacheFirst",
       options: {
         cacheName: "map-tiles-topo",
         expiration: {
-          maxEntries: 500,
-          maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+          maxEntries: 800,
+          maxAgeSeconds: 30 * 24 * 60 * 60,
         },
         cacheableResponse: {
           statuses: [0, 200],
@@ -32,14 +51,14 @@ const withPWA = require("next-pwa")({
       },
     },
     {
-      // Cache Esri satellite tiles
-      urlPattern: /^https:\/\/server\.arcgisonline\.com\/.*$/,
+      // Esri satellite tiles (3D preview / satellite layer)
+      urlPattern: /^https:\/\/server\.arcgisonline\.com\/.*/i,
       handler: "CacheFirst",
       options: {
         cacheName: "map-tiles-satellite",
         expiration: {
-          maxEntries: 500,
-          maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+          maxEntries: 800,
+          maxAgeSeconds: 30 * 24 * 60 * 60,
         },
         cacheableResponse: {
           statuses: [0, 200],
@@ -47,27 +66,8 @@ const withPWA = require("next-pwa")({
       },
     },
     {
-      // Cache Google Fonts
-      urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*$/,
-      handler: "StaleWhileRevalidate",
-      options: {
-        cacheName: "google-fonts-stylesheets",
-      },
-    },
-    {
-      urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*$/,
-      handler: "CacheFirst",
-      options: {
-        cacheName: "google-fonts-webfonts",
-        expiration: {
-          maxEntries: 30,
-          maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
-        },
-      },
-    },
-    {
-      // Cache Leaflet assets
-      urlPattern: /^https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/leaflet\/.*$/,
+      // Leaflet marker assets
+      urlPattern: /^https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/leaflet\/.*/i,
       handler: "CacheFirst",
       options: {
         cacheName: "leaflet-assets",
@@ -75,11 +75,14 @@ const withPWA = require("next-pwa")({
           maxEntries: 20,
           maxAgeSeconds: 365 * 24 * 60 * 60,
         },
+        cacheableResponse: {
+          statuses: [0, 200],
+        },
       },
     },
     {
-      // Cache static assets
-      urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico|gpx)$/,
+      // GPX and other static files in /public
+      urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico|gpx|kml)$/i,
       handler: "CacheFirst",
       options: {
         cacheName: "static-assets",
@@ -89,6 +92,8 @@ const withPWA = require("next-pwa")({
         },
       },
     },
+    // Keep next-pwa defaults (fonts, js/css, same-origin, etc.)
+    ...defaultCache,
   ],
 });
 

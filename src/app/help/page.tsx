@@ -2,6 +2,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { trailInfo, peaks } from "@/data/stirlingRidgeData";
 import { routeCoordinates } from "@/data/routeCoordinates";
+import OfflineInstallGuide from "@/components/OfflineInstallGuide";
 
 const OfflineManager = dynamic(() => import("@/components/OfflineManager"), {
   ssr: false,
@@ -16,6 +17,8 @@ export default function HelpPage() {
           How to use the Trail Map, GPS, compass, offline mode, and what to carry before you hike.
         </p>
       </header>
+
+      <OfflineInstallGuide />
 
       {/* CRITICAL WARNING */}
       <div className="bg-red-100 border-2 border-red-400 rounded-xl p-6">

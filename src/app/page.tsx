@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { trailInfo, peaks, weatherInfo } from "@/data/stirlingRidgeData";
+import OfflineInstallGuide from "@/components/OfflineInstallGuide";
 
 export default function Home() {
   return (
@@ -49,6 +50,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <OfflineInstallGuide />
 
       {/* Navigation Cards */}
       <section className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
