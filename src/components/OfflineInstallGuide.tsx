@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 
 const PAGE_ROUTES = [
   "/",
-  "/?source=pwa",
   "/map",
   "/help",
   "/info",
@@ -70,9 +69,8 @@ async function warmOfflineCaches(): Promise<{ ok: boolean; cached: number; detai
         headers: res.headers,
       });
       await pages.put(path, stored.clone());
-      if (path === "/" || path.startsWith("/?")) {
+      if (path === "/") {
         await startUrl.put("/", stored.clone());
-        await startUrl.put(path, stored.clone());
       }
       okCount += 1;
     } catch {

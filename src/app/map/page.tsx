@@ -36,6 +36,13 @@ export default function MapPage() {
         for GPX download, offline setup, and safety notes.
       </p>
 
+      <p className="text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+        Pinch-zoom stays sharp on <strong>Topographic</strong> or{" "}
+        <strong>Satellite</strong> (layer control, top-right). Contours
+        (OpenTopo) is best at mid zoom — it can go blank if you zoom in too far.
+        For Airplane Mode, download tiles on Help while online.
+      </p>
+
       <StirlingMap />
     </div>
   );

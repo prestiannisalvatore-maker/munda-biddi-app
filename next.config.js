@@ -25,8 +25,8 @@ const withPWA = require("next-pwa")({
   ],
   // Precache shell assets needed before any runtime visit
   additionalManifestEntries: [
-    { url: "/offline.html", revision: "ios-offline-v3" },
-    { url: "/manifest.json", revision: "ios-offline-v3" },
+    { url: "/offline.html", revision: "ios-offline-v4" },
+    { url: "/manifest.json", revision: "ios-offline-v4" },
   ],
   runtimeCaching: [
     // Cache full page navigations (critical for iPhone airplane mode)
@@ -55,13 +55,13 @@ const withPWA = require("next-pwa")({
       },
     },
     {
-      // OpenTopoMap tiles for offline Trail Map
+      // OpenTopoMap contour tiles
       urlPattern: /^https:\/\/[abc]\.tile\.opentopomap\.org\/.*/i,
       handler: "CacheFirst",
       options: {
         cacheName: "map-tiles-topo",
         expiration: {
-          maxEntries: 800,
+          maxEntries: 2500,
           maxAgeSeconds: 30 * 24 * 60 * 60,
         },
         cacheableResponse: {
@@ -70,13 +70,28 @@ const withPWA = require("next-pwa")({
       },
     },
     {
-      // Esri satellite tiles (3D preview / satellite layer)
+      // Esri World Topo + World Imagery (Trail Map + 3D)
       urlPattern: /^https:\/\/server\.arcgisonline\.com\/.*/i,
       handler: "CacheFirst",
       options: {
-        cacheName: "map-tiles-satellite",
+        cacheName: "map-tiles-esri",
         expiration: {
-          maxEntries: 800,
+          maxEntries: 4000,
+          maxAgeSeconds: 30 * 24 * 60 * 60,
+        },
+        cacheableResponse: {
+          statuses: [0, 200],
+        },
+      },
+    },
+    {
+      // OSM streets (high-zoom detail layer)
+      urlPattern: /^https:\/\/[abc]\.tile\.openstreetmap\.org\/.*/i,
+      handler: "CacheFirst",
+      options: {
+        cacheName: "map-tiles-osm",
+        expiration: {
+          maxEntries: 1500,
           maxAgeSeconds: 30 * 24 * 60 * 60,
         },
         cacheableResponse: {
