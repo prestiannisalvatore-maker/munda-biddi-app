@@ -15,12 +15,19 @@ const BASE_DURATION_SEC = 160;
 const UI_UPDATE_MS = 150;
 /** Look ahead ~8 GPS samples (~300–400 m) for stable camera bearing. */
 const BEARING_LOOKAHEAD = 8;
-/** Default framing when ▶ starts (user can still pinch/scroll to zoom further). */
-const PLAY_ZOOM = 13.25;
+/** Default framing when ▶ starts — closer so ridge walls fill the view. */
+const PLAY_ZOOM = 14.35;
 /** Closest useful satellite detail for this Esri imagery. */
 const MAX_ZOOM = 18;
 const MIN_ZOOM = 9;
 const DETAIL_ZOOM = 16.5;
+/** Dramatic tilt so steep Stirling faces read in perspective. */
+const DEFAULT_PITCH = 72;
+/** Vertical exaggeration — Stirling relief is ~700 m; 1.5× looks almost flat. */
+const DEFAULT_EXAGGERATION = 3.2;
+const MIN_EXAGGERATION = 1.5;
+const MAX_EXAGGERATION = 5;
+const DEM_SOURCE_ID = "terrain-dem";
 /** Camera follow smoothing (lower = smoother / less snappy). */
 const CENTER_SMOOTH = 0.12;
 const BEARING_SMOOTH = 0.08;
@@ -117,13 +124,14 @@ export default function Mapbox3DTrail() {
   const markerRef = useRef<mapboxgl.Marker | null>(null);
   const animFrameRef = useRef<number | null>(null);
   const progressRef = useRef(0);
-  const pitchRef = useRef(55);
+  const pitchRef = useRef(DEFAULT_PITCH);
   const isPlayingRef = useRef(false);
   const lastUiUpdateRef = useRef(0);
   const smoothCenterRef = useRef<{ lng: number; lat: number } | null>(null);
   const smoothBearingRef = useRef<number | null>(null);
   const lastCameraMoveRef = useRef(0);
   const terrainFailedRef = useRef(false);
+  const exaggerationRef = useRef(DEFAULT_EXAGGERATION);
 
   const [loaded, setLoaded] = useState(false);
   const [terrainReady, setTerrainReady] = useState(false);
@@ -132,11 +140,11 @@ export default function Mapbox3DTrail() {
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [pitch, setPitch] = useState(55);
+  const [pitch, setPitch] = useState(DEFAULT_PITCH);
   const [showPeaks, setShowPeaks] = useState(true);
   const [showCamps, setShowCamps] = useState(true);
   const [showContours, setShowContours] = useState(false);
-  const [exaggeration, setExaggeration] = useState(1.5);
+  const [exaggeration, setExaggeration] = useState(DEFAULT_EXAGGERATION);
   const [speed, setSpeed] = useState(0.5);
 
   const trailGeoJSON: GeoJSON.FeatureCollection = {
@@ -254,12 +262,12 @@ export default function Mapbox3DTrail() {
         container: mapContainer.current,
         style: SATELLITE_STYLE,
         center: [118.31, -34.355],
-        zoom: 11.5,
-        pitch: 45,
-        bearing: -35,
+        zoom: 12.2,
+        pitch: DEFAULT_PITCH,
+        bearing: -40,
         antialias: true,
         fadeDuration: 0,
-        maxPitch: 80,
+        maxPitch: 85,
         minZoom: MIN_ZOOM,
         maxZoom: MAX_ZOOM,
         preserveDrawingBuffer: false,
@@ -275,25 +283,75 @@ export default function Mapbox3DTrail() {
       const bounds = new mapboxgl.LngLatBounds();
       routeCoordinates.forEach(([lng, lat]) => bounds.extend([lng, lat]));
 
-      const disableTerrain = (reason: string) => {
-        terrainFailedRef.current = true;
+      const removeTerrainLayers = () => {
+        for (const id of ["hillshade", "sky"]) {
+          if (map.getLayer(id)) {
+            try {
+              map.removeLayer(id);
+            } catch {
+              /* ignore */
+            }
+          }
+        }
         try {
           map.setTerrain(null);
         } catch {
           /* ignore */
         }
-        if (map.getLayer("sky")) {
+        if (map.getSource(DEM_SOURCE_ID)) {
           try {
-            map.removeLayer("sky");
+            map.removeSource(DEM_SOURCE_ID);
           } catch {
             /* ignore */
           }
         }
+      };
+
+      const applyTerrainLook = (exag: number) => {
+        if (!map.getSource(DEM_SOURCE_ID)) return;
+        map.setTerrain({ source: DEM_SOURCE_ID, exaggeration: exag });
+        if (!map.getLayer("hillshade")) {
+          // Insert above satellite so cliffs catch light; below trail/sky
+          const beforeId = map.getLayer("trail-glow") ? "trail-glow" : undefined;
+          map.addLayer(
+            {
+              id: "hillshade",
+              type: "hillshade",
+              source: DEM_SOURCE_ID,
+              paint: {
+                "hillshade-exaggeration": 0.75,
+                "hillshade-shadow-color": "#0f172a",
+                "hillshade-highlight-color": "#f8fafc",
+                "hillshade-accent-color": "#78716c",
+                "hillshade-illumination-direction": 315,
+                "hillshade-illumination-anchor": "viewport",
+              },
+            },
+            beforeId
+          );
+        } else {
+          map.setPaintProperty("hillshade", "hillshade-exaggeration", 0.75);
+        }
+        if (!map.getLayer("sky")) {
+          map.addLayer({
+            id: "sky",
+            type: "sky",
+            paint: {
+              "sky-type": "atmosphere",
+              "sky-atmosphere-sun": [0.0, 55.0],
+              "sky-atmosphere-sun-intensity": 12,
+            },
+          });
+        }
+      };
+
+      const disableTerrain = (reason: string) => {
+        terrainFailedRef.current = true;
+        removeTerrainLayers();
         setTerrainReady(false);
         setTerrainNote(reason);
         setLoadStatus("");
-        // Keep a pleasant pitched view over flat satellite
-        map.easeTo({ pitch: 50, duration: 400, essential: true });
+        map.easeTo({ pitch: Math.max(pitchRef.current, 60), duration: 400, essential: true });
       };
 
       const addTrailAndMarkers = () => {
@@ -351,52 +409,59 @@ export default function Mapbox3DTrail() {
       };
 
       const enableTerrain = async () => {
-        if (terrainFailedRef.current || map.getSource("mapbox-dem")) return;
-        setLoadStatus("Checking 3D terrain…");
+        if (terrainFailedRef.current || map.getSource(DEM_SOURCE_ID)) return;
+        setLoadStatus("Building 3D mountains…");
 
-        // Preflight one DEM tile — if Mapbox is rate-limiting, skip terrain so
-        // the canvas never goes black.
+        // Prefer Mapbox DEM when the token is healthy; otherwise use public
+        // AWS Terrarium tiles so the ridge stays 3D even after Mapbox 429s.
+        let useMapboxDem = false;
         try {
           const probe = await fetch(
             `https://api.mapbox.com/v4/mapbox.mapbox-terrain-dem-v1/10/844/616.webp?access_token=${MAPBOX_TOKEN}`,
             { method: "GET", cache: "no-store" }
           );
-          if (!probe.ok) {
-            disableTerrain(
-              probe.status === 429
-                ? "Mapbox 3D terrain temporarily rate-limited — satellite preview stays on."
-                : "3D terrain unavailable — showing flat satellite."
-            );
-            return;
-          }
+          useMapboxDem = probe.ok;
         } catch {
-          disableTerrain("3D terrain unavailable — showing flat satellite.");
-          return;
+          useMapboxDem = false;
         }
 
         try {
-          setLoadStatus("Enhancing 3D terrain…");
-          map.addSource("mapbox-dem", {
-            type: "raster-dem",
-            url: "mapbox://mapbox.mapbox-terrain-dem-v1",
-            tileSize: 512,
-            maxzoom: 14,
-          });
-          map.setTerrain({ source: "mapbox-dem", exaggeration: 1.5 });
-          if (!map.getLayer("sky")) {
-            map.addLayer({
-              id: "sky",
-              type: "sky",
-              paint: {
-                "sky-type": "atmosphere",
-                "sky-atmosphere-sun": [0.0, 90.0],
-                "sky-atmosphere-sun-intensity": 15,
-              },
+          if (useMapboxDem) {
+            map.addSource(DEM_SOURCE_ID, {
+              type: "raster-dem",
+              url: "mapbox://mapbox.mapbox-terrain-dem-v1",
+              tileSize: 512,
+              maxzoom: 14,
+            });
+          } else {
+            map.addSource(DEM_SOURCE_ID, {
+              type: "raster-dem",
+              tiles: [
+                "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+              ],
+              encoding: "terrarium",
+              tileSize: 256,
+              maxzoom: 15,
+              attribution: "Elevation © Mapzen / AWS Terrain Tiles",
             });
           }
-          map.easeTo({ pitch: 60, duration: 900, essential: true });
+
+          applyTerrainLook(exaggerationRef.current);
+          setPitch(DEFAULT_PITCH);
+          pitchRef.current = DEFAULT_PITCH;
+          map.easeTo({
+            pitch: DEFAULT_PITCH,
+            zoom: Math.max(map.getZoom(), 12.8),
+            bearing: -40,
+            duration: 1100,
+            essential: true,
+          });
           setTerrainReady(true);
-          setTerrainNote(null);
+          setTerrainNote(
+            useMapboxDem
+              ? null
+              : "Using backup elevation data — hills exaggerated so the ridge reads clearly."
+          );
           setLoadStatus("");
         } catch {
           disableTerrain("3D terrain unavailable — showing flat satellite.");
@@ -407,8 +472,8 @@ export default function Mapbox3DTrail() {
         addTrailAndMarkers();
         map.fitBounds(bounds, {
           padding: 56,
-          pitch: 45,
-          bearing: -35,
+          pitch: DEFAULT_PITCH,
+          bearing: -40,
           duration: 0,
         });
         setLoaded(true);
@@ -421,8 +486,8 @@ export default function Mapbox3DTrail() {
           enhanced = true;
           void enableTerrain();
         };
-        map.once("idle", () => window.setTimeout(enhance, 500));
-        window.setTimeout(enhance, 2500);
+        map.once("idle", () => window.setTimeout(enhance, 400));
+        window.setTimeout(enhance, 2000);
       });
 
       map.on("error", (e) => {
@@ -433,7 +498,7 @@ export default function Mapbox3DTrail() {
           setError("invalid-token");
           return;
         }
-        // DEM / Mapbox tile rate limits blank the canvas when terrain is on — drop terrain
+        // Mapbox DEM 429s can blank the canvas — swap to public Terrarium DEM
         const isTileFail =
           status === 429 ||
           msg.includes("429") ||
@@ -443,9 +508,29 @@ export default function Mapbox3DTrail() {
           msg.includes("failed to fetch") ||
           msg.includes("ajax");
         if (isTileFail && map.getTerrain()) {
-          disableTerrain(
-            "Mapbox terrain rate-limited — satellite stays on; try 3D again later."
-          );
+          try {
+            removeTerrainLayers();
+            if (!map.getSource(DEM_SOURCE_ID)) {
+              map.addSource(DEM_SOURCE_ID, {
+                type: "raster-dem",
+                tiles: [
+                  "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+                ],
+                encoding: "terrarium",
+                tileSize: 256,
+                maxzoom: 15,
+              });
+            }
+            applyTerrainLook(exaggerationRef.current);
+            setTerrainReady(true);
+            setTerrainNote(
+              "Switched to backup elevation — mountains stay 3D."
+            );
+          } catch {
+            disableTerrain(
+              "3D terrain unavailable — satellite stays on; try again later."
+            );
+          }
         }
       });
 
@@ -518,9 +603,17 @@ export default function Mapbox3DTrail() {
   }, [loaded, showCamps]);
 
   useEffect(() => {
+    exaggerationRef.current = exaggeration;
     const map = mapRef.current;
-    if (!map || !loaded || !terrainReady || !map.getSource("mapbox-dem")) return;
-    map.setTerrain({ source: "mapbox-dem", exaggeration });
+    if (!map || !loaded || !terrainReady || !map.getSource(DEM_SOURCE_ID)) return;
+    map.setTerrain({ source: DEM_SOURCE_ID, exaggeration });
+    if (map.getLayer("hillshade")) {
+      map.setPaintProperty(
+        "hillshade",
+        "hillshade-exaggeration",
+        Math.min(0.95, 0.45 + exaggeration * 0.1)
+      );
+    }
   }, [exaggeration, loaded, terrainReady]);
 
   useEffect(() => {
@@ -636,6 +729,11 @@ export default function Mapbox3DTrail() {
     const seed = sampleTrail(startPct);
     smoothCenterRef.current = { lng: seed.lng, lat: seed.lat };
     smoothBearingRef.current = seed.bearing;
+    // Dramatic ridge framing for play — steep pitch + closer zoom
+    if (terrainReady) {
+      setPitch((p) => Math.max(p, DEFAULT_PITCH));
+      pitchRef.current = Math.max(pitchRef.current, DEFAULT_PITCH);
+    }
     const startZoom = Math.max(map.getZoom(), PLAY_ZOOM);
     applyCamera(startPct, { zoom: startZoom, smooth: false });
 
@@ -671,6 +769,7 @@ export default function Mapbox3DTrail() {
     animFrameRef.current = requestAnimationFrame(tick);
   }, [
     loaded,
+    terrainReady,
     applyCamera,
     syncProgressUi,
     stopPlayback,
@@ -752,8 +851,10 @@ export default function Mapbox3DTrail() {
           <div>
             <div className="font-semibold text-sm">3D Trail Preview</div>
             <div className="text-[10px] text-slate-400">
-              {TRAIL_LEN.toLocaleString()} GPS points · Satellite imagery
-              {terrainReady ? " + 3D terrain" : ""}
+              {TRAIL_LEN.toLocaleString()} GPS points · Satellite
+              {terrainReady
+                ? ` + 3D mountains (${exaggeration.toFixed(1)}×)`
+                : " · loading terrain…"}
             </div>
           </div>
         </div>
@@ -860,18 +961,18 @@ export default function Mapbox3DTrail() {
             <span className="text-slate-500">{pitch}°</span>
           </div>
           <div>
-            <label className="text-slate-400 block mb-1">Terrain height</label>
+            <label className="text-slate-400 block mb-1">Mountain height</label>
             <input
               type="range"
-              min={1}
-              max={3}
+              min={MIN_EXAGGERATION}
+              max={MAX_EXAGGERATION}
               step={0.1}
               value={exaggeration}
               onChange={(e) => setExaggeration(parseFloat(e.target.value))}
-              disabled={!loaded}
+              disabled={!loaded || !terrainReady}
               className="w-full accent-blue-400"
             />
-            <span className="text-slate-500">{exaggeration.toFixed(1)}x</span>
+            <span className="text-slate-500">{exaggeration.toFixed(1)}× relief</span>
           </div>
           <div>
             <label className="text-slate-400 block mb-1">Play speed</label>
@@ -934,16 +1035,19 @@ export default function Mapbox3DTrail() {
                 onClick={() => {
                   const map = mapRef.current;
                   if (!map) return;
+                  const nextPitch = Math.max(pitchRef.current, DEFAULT_PITCH);
+                  pitchRef.current = nextPitch;
+                  setPitch(nextPitch);
                   map.easeTo({
                     zoom: DETAIL_ZOOM,
-                    pitch: Math.min(pitchRef.current, 55),
+                    pitch: nextPitch,
                     duration: 500,
                     essential: true,
                   });
                 }}
                 disabled={!loaded}
                 className="flex-1 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg disabled:opacity-40"
-                title="Zoom in for more satellite detail"
+                title="Zoom in along the steep faces"
               >
                 Detail
               </button>
@@ -981,8 +1085,9 @@ export default function Mapbox3DTrail() {
         </div>
 
         <p className="text-[11px] text-slate-500 text-center">
-          Scroll / pinch or use ＋ － / Detail to zoom (up to ~street-level satellite) · ▶ keeps your
-          zoom while flying
+          ▶ flies closer along the ridge with exaggerated height so Bluff Knoll and the
+          steep faces read clearly · drag <strong>Mountain height</strong> up to 5× if you
+          want even steeper walls · ＋ － / Detail to zoom
         </p>
       </div>
     </div>
