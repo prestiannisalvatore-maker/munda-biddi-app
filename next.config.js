@@ -1,132 +1,120 @@
 const defaultCache = require("next-pwa/cache");
 
+/** Bump when offline shell changes so SW re-precache runs on devices. */
+const OFFLINE_REV = "offline-life-v1";
+
 const withPWA = require("next-pwa")({
   dest: "public",
-  // App Router: register from ServiceWorkerRegister client component instead
+  // App Router: register from ServiceWorkerRegister client component
   register: false,
   skipWaiting: true,
   clientsClaim: true,
-  // Cache Next.js client navigations so tabs visited online work offline
   cacheOnFrontEndNav: true,
-  // Don't force-reload when connectivity returns (disrupts field use)
   reloadOnOnline: false,
+  // Precache "/" HTML at install (critical for Home Screen cold start)
+  cacheStartUrl: true,
+  dynamicStartUrl: false,
+  customWorkerDir: "worker",
   disable: process.env.NODE_ENV === "development",
-  // Serve offline.html when a page isn't in cache and the network is down
   fallbacks: {
     document: "/offline.html",
   },
-  // App Router emits app-build-manifest.json into the Workbox precache, but
-  // Vercel does not serve that file (404). One missing precache URL makes the
-  // whole service worker fail to install on iPhone — badges hang forever.
+  // One 404 in the precache list prevents the entire SW from installing on iOS
   buildExcludes: [
     /app-build-manifest\.json$/,
     /middleware-manifest\.json$/,
     /server\/app\/.*\/page_client-reference-manifest\.js$/,
   ],
-  // Precache shell assets needed before any runtime visit
+  // Precache critical documents + shell so Airplane Mode opens without a prior visit
   additionalManifestEntries: [
-    { url: "/offline.html", revision: "ios-offline-v4" },
-    { url: "/manifest.json", revision: "ios-offline-v4" },
+    { url: "/offline.html", revision: OFFLINE_REV },
+    { url: "/manifest.json", revision: OFFLINE_REV },
+    { url: "/", revision: OFFLINE_REV },
+    { url: "/map", revision: OFFLINE_REV },
+    { url: "/help", revision: OFFLINE_REV },
+    { url: "/info", revision: OFFLINE_REV },
+    { url: "/itinerary", revision: OFFLINE_REV },
+    { url: "/checklist", revision: OFFLINE_REV },
+    { url: "/stirling-ridge-walk.gpx", revision: OFFLINE_REV },
+    { url: "/leaflet/marker-icon.png", revision: OFFLINE_REV },
+    { url: "/leaflet/marker-icon-2x.png", revision: OFFLINE_REV },
+    { url: "/leaflet/marker-shadow.png", revision: OFFLINE_REV },
+    { url: "/icons/apple-touch-icon.png", revision: OFFLINE_REV },
+    { url: "/icons/icon-192x192.png", revision: OFFLINE_REV },
+    { url: "/icons/icon-512x512.png", revision: OFFLINE_REV },
   ],
   runtimeCaching: [
-    // Cache full page navigations (critical for iPhone airplane mode)
+    // OFFLINE-FIRST navigations: serve cache immediately (avoids iOS Safari
+    // "not connected" when NetworkFirst waits on a dead radio).
     {
       urlPattern: ({ request }) => request.mode === "navigate",
-      handler: "NetworkFirst",
+      handler: "StaleWhileRevalidate",
       options: {
         cacheName: "pages",
-        networkTimeoutSeconds: 3,
         expiration: {
-          maxEntries: 48,
-          maxAgeSeconds: 30 * 24 * 60 * 60,
+          maxEntries: 64,
+          maxAgeSeconds: 60 * 24 * 60 * 60,
         },
       },
     },
     {
-      // Next.js build assets
       urlPattern: /\/_next\/static\/.*/i,
       handler: "CacheFirst",
       options: {
         cacheName: "next-static",
         expiration: {
-          maxEntries: 200,
+          maxEntries: 300,
           maxAgeSeconds: 365 * 24 * 60 * 60,
         },
       },
     },
     {
-      // OpenTopoMap contour tiles
       urlPattern: /^https:\/\/[abc]\.tile\.opentopomap\.org\/.*/i,
       handler: "CacheFirst",
       options: {
         cacheName: "map-tiles-topo",
         expiration: {
           maxEntries: 2500,
-          maxAgeSeconds: 30 * 24 * 60 * 60,
+          maxAgeSeconds: 60 * 24 * 60 * 60,
         },
-        cacheableResponse: {
-          statuses: [0, 200],
-        },
+        cacheableResponse: { statuses: [0, 200] },
       },
     },
     {
-      // Esri World Topo + World Imagery (Trail Map + 3D)
       urlPattern: /^https:\/\/server\.arcgisonline\.com\/.*/i,
       handler: "CacheFirst",
       options: {
         cacheName: "map-tiles-esri",
         expiration: {
-          maxEntries: 4000,
-          maxAgeSeconds: 30 * 24 * 60 * 60,
+          maxEntries: 5000,
+          maxAgeSeconds: 60 * 24 * 60 * 60,
         },
-        cacheableResponse: {
-          statuses: [0, 200],
-        },
+        cacheableResponse: { statuses: [0, 200] },
       },
     },
     {
-      // OSM streets (high-zoom detail layer)
       urlPattern: /^https:\/\/[abc]\.tile\.openstreetmap\.org\/.*/i,
       handler: "CacheFirst",
       options: {
         cacheName: "map-tiles-osm",
         expiration: {
           maxEntries: 1500,
-          maxAgeSeconds: 30 * 24 * 60 * 60,
+          maxAgeSeconds: 60 * 24 * 60 * 60,
         },
-        cacheableResponse: {
-          statuses: [0, 200],
-        },
+        cacheableResponse: { statuses: [0, 200] },
       },
     },
     {
-      // Leaflet marker assets
-      urlPattern: /^https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/leaflet\/.*/i,
-      handler: "CacheFirst",
-      options: {
-        cacheName: "leaflet-assets",
-        expiration: {
-          maxEntries: 20,
-          maxAgeSeconds: 365 * 24 * 60 * 60,
-        },
-        cacheableResponse: {
-          statuses: [0, 200],
-        },
-      },
-    },
-    {
-      // GPX and other static files in /public
       urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico|gpx|kml)$/i,
       handler: "CacheFirst",
       options: {
         cacheName: "static-assets",
         expiration: {
-          maxEntries: 100,
+          maxEntries: 200,
           maxAgeSeconds: 365 * 24 * 60 * 60,
         },
       },
     },
-    // Keep next-pwa defaults (fonts, js/css, same-origin, etc.)
     ...defaultCache,
   ],
 });

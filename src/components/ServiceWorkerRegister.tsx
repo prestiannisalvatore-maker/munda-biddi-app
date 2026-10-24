@@ -36,6 +36,9 @@ export default function ServiceWorkerRegister() {
         if (reg.waiting) {
           reg.waiting.postMessage({ type: "SKIP_WAITING" });
         }
+        if (reg.active) {
+          reg.active.postMessage({ type: "CLIENTS_CLAIM" });
+        }
       } catch (err) {
         console.warn("[PWA] service worker registration failed", err);
       }

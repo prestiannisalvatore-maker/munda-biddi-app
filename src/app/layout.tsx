@@ -3,6 +3,7 @@ import { Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
+import OfflineStatusBanner from "@/components/OfflineStatusBanner";
 
 // Self-hosted at build time — no Google Fonts request in airplane mode
 const sourceSans = Source_Sans_3({
@@ -55,6 +56,7 @@ export default function RootLayout({
         className={`${sourceSans.className} min-h-screen bg-slate-50 antialiased flex flex-col`}
       >
         <ServiceWorkerRegister />
+        <OfflineStatusBanner />
         <div className="bg-amber-700 text-white text-center py-2 text-sm">
           Built by <span className="font-semibold">Salvatore Prestianni</span>
         </div>

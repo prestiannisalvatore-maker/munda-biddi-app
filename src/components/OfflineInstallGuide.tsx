@@ -1,199 +1,28 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import {
+  isOfflineReadyFlag,
+  prepareForOffline,
+  verifyOfflineCaches,
+  type PrepProgress,
+} from "@/lib/offlinePrep";
 
-const PAGE_ROUTES = [
-  "/",
-  "/map",
-  "/help",
-  "/info",
-  "/itinerary",
-  "/checklist",
-  "/3d",
-];
-
-const EXTRA_ASSETS = [
-  "/offline.html",
-  "/manifest.json",
-  "/stirling-ridge-walk.gpx",
-  "/icons/apple-touch-icon.png",
-  "/icons/icon-192x192.png",
-  "/icons/icon-512x512.png",
-];
-
-function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const t = window.setTimeout(() => reject(new Error(`${label} timed out`)), ms);
-    promise.then(
-      (v) => {
-        window.clearTimeout(t);
-        resolve(v);
-      },
-      (e) => {
-        window.clearTimeout(t);
-        reject(e);
-      }
-    );
-  });
-}
-
-async function warmOfflineCaches(): Promise<{ ok: boolean; cached: number; detail: string }> {
-  if (!("caches" in window)) {
-    return {
-      ok: false,
-      cached: 0,
-      detail: "Offline storage blocked — leave Private Browsing.",
-    };
-  }
-  if (!navigator.onLine) {
-    return { ok: false, cached: 0, detail: "Go online to cache pages first." };
-  }
-
-  const pages = await caches.open("pages");
-  const startUrl = await caches.open("start-url");
-  const assets = await caches.open("static-assets");
-
-  let okCount = 0;
-  for (const path of PAGE_ROUTES) {
-    try {
-      const res = await fetch(path, {
-        credentials: "same-origin",
-        headers: { Accept: "text/html" },
-        cache: "no-cache",
-      });
-      if (!res.ok) continue;
-      const body = await res.blob();
-      const stored = new Response(body, {
-        status: 200,
-        statusText: "OK",
-        headers: res.headers,
-      });
-      await pages.put(path, stored.clone());
-      if (path === "/") {
-        await startUrl.put("/", stored.clone());
-      }
-      okCount += 1;
-    } catch {
-      /* keep going */
-    }
-  }
-
-  for (const path of EXTRA_ASSETS) {
-    try {
-      const res = await fetch(path, { credentials: "same-origin", cache: "no-cache" });
-      if (res.ok) await assets.put(path, res.clone());
-    } catch {
-      /* ignore */
-    }
-  }
-
-  const controller = navigator.serviceWorker?.controller;
-  if (controller) {
-    controller.postMessage({
-      type: "CACHE_URLS",
-      payload: { urlsToCache: [...PAGE_ROUTES, ...EXTRA_ASSETS] },
-    });
-  }
-
-  if (okCount >= 3) {
-    return { ok: true, cached: okCount, detail: `Cached ${okCount} pages.` };
-  }
-  return { ok: false, cached: okCount, detail: `Only cached ${okCount} pages.` };
-}
-
-async function ensureServiceWorker(): Promise<{ ready: boolean; detail: string }> {
-  if (!("serviceWorker" in navigator)) {
-    return {
-      ready: false,
-      detail: "Service workers unavailable — use Safari, not Private mode.",
-    };
-  }
-
-  try {
-    // Remove broken registrations left by the old 404 precache bug
-    const regs = await navigator.serviceWorker.getRegistrations();
-    for (const reg of regs) {
-      if (!reg.active) {
-        await reg.unregister();
-      }
-    }
-
-    const reg = await withTimeout(
-      navigator.serviceWorker.register("/sw.js", {
-        scope: "/",
-        updateViaCache: "none",
-      }),
-      20000,
-      "Service worker register"
-    );
-
-    // Wait for activate (install can take a few seconds on cellular)
-    const active = await new Promise<ServiceWorker | null>((resolve) => {
-      if (reg.active) {
-        resolve(reg.active);
-        return;
-      }
-      const worker = reg.installing || reg.waiting;
-      if (!worker) {
-        resolve(null);
-        return;
-      }
-      const onChange = () => {
-        if (worker.state === "activated" || reg.active) {
-          worker.removeEventListener("statechange", onChange);
-          resolve(reg.active || worker);
-        } else if (worker.state === "redundant") {
-          worker.removeEventListener("statechange", onChange);
-          resolve(null);
-        }
-      };
-      worker.addEventListener("statechange", onChange);
-      window.setTimeout(() => {
-        worker.removeEventListener("statechange", onChange);
-        resolve(reg.active);
-      }, 25000);
-    });
-
-    if (active || reg.active || navigator.serviceWorker.controller) {
-      return { ready: true, detail: "Offline engine active." };
-    }
-
-    // Last chance: ready promise with timeout
-    try {
-      const readyReg = await withTimeout(
-        navigator.serviceWorker.ready,
-        10000,
-        "Service worker ready"
-      );
-      if (readyReg.active) {
-        return { ready: true, detail: "Offline engine ready." };
-      }
-    } catch {
-      /* fall through */
-    }
-
-    return {
-      ready: false,
-      detail:
-        "Offline engine installed but not active yet. Tap Retry, or Settings → Safari → Clear History and Website Data for this site, then reload.",
-    };
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "Registration failed";
-    return {
-      ready: false,
-      detail: `${msg}. Use Safari (not Chrome), leave Private mode, then tap Retry.`,
-    };
-  }
-}
-
+/**
+ * Mandatory offline prep for field use. Do not enter the Stirling Range
+ * until this reports fully ready.
+ */
 export default function OfflineInstallGuide() {
   const [swReady, setSwReady] = useState(false);
-  const [cached, setCached] = useState(false);
-  const [caching, setCaching] = useState(false);
+  const [pagesReady, setPagesReady] = useState(false);
+  const [tilesReady, setTilesReady] = useState(false);
   const [online, setOnline] = useState(true);
   const [standalone, setStandalone] = useState(false);
-  const [status, setStatus] = useState("Checking offline setup…");
+  const [status, setStatus] = useState("Checking offline readiness…");
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState<PrepProgress | null>(null);
+
+  const fullyReady = swReady && pagesReady && tilesReady;
 
   useEffect(() => {
     setOnline(navigator.onLine);
@@ -208,157 +37,187 @@ export default function OfflineInstallGuide() {
         Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
     setStandalone(isStandalone);
 
+    void verifyOfflineCaches().then((v) => {
+      setSwReady(v.swOk);
+      setPagesReady(v.pagesOk);
+      setTilesReady(v.tilesOk);
+      if (v.swOk && v.pagesOk && v.tilesOk) {
+        setStatus("Offline pack verified on this device.");
+      } else if (isOfflineReadyFlag() && !(v.swOk && v.pagesOk && v.tilesOk)) {
+        setStatus("Previous prep incomplete after an update — run Prepare again on Wi‑Fi.");
+      }
+    });
+
     return () => {
       window.removeEventListener("online", on);
       window.removeEventListener("offline", off);
     };
   }, []);
 
-  const prepareOffline = useCallback(async () => {
+  const runPrep = useCallback(async () => {
     setBusy(true);
+    setProgress(null);
 
     if (!navigator.onLine) {
       setBusy(false);
-      setStatus("Go online first, then tap Retry.");
+      setStatus("Connect to Wi‑Fi first. Offline prep cannot run in Airplane Mode.");
       return;
     }
 
-    // Cache pages first so that badge can go green even while SW activates
-    setCaching(true);
-    setStatus("Caching app pages…");
-    const result = await warmOfflineCaches();
-    setCached(result.ok);
-    setCaching(false);
+    const result = await prepareForOffline((p) => {
+      setProgress(p);
+      setStatus(`${p.phase} ${p.total ? `(${p.current}/${p.total})` : ""}`);
+    });
 
-    setStatus("Starting offline engine…");
-    const sw = await ensureServiceWorker();
-    setSwReady(sw.ready);
-
-    if (sw.ready && result.ok) {
-      setStatus(`${result.detail} Offline engine ready — you can Add to Home Screen.`);
-    } else if (result.ok && !sw.ready) {
-      setStatus(`${result.detail} But ${sw.detail}`);
-    } else {
-      setStatus(`${result.detail} ${sw.detail}`);
-    }
+    setSwReady(result.sw);
+    setPagesReady(result.pages);
+    setTilesReady(result.tiles);
+    setStatus(result.detail);
+    setProgress(null);
     setBusy(false);
   }, []);
 
   useEffect(() => {
-    void prepareOffline();
-  }, [prepareOffline]);
-
-  const readyForAirplane = swReady && cached;
+    // Auto-prep once when online and not yet ready
+    if (!navigator.onLine) return;
+    if (isOfflineReadyFlag()) return;
+    void runPrep();
+  }, [runPrep]);
 
   return (
-    <div className="rounded-xl border-2 border-amber-400 bg-amber-50 p-5 sm:p-6 space-y-4">
+    <div
+      className={`rounded-xl border-2 p-5 sm:p-6 space-y-4 ${
+        fullyReady
+          ? "border-green-500 bg-green-50"
+          : "border-red-500 bg-red-50"
+      }`}
+    >
       <div>
-        <h2 className="font-bold text-amber-950 text-lg">
-          Use this app offline on iPhone
+        <h2
+          className={`font-bold text-lg ${
+            fullyReady ? "text-green-950" : "text-red-950"
+          }`}
+        >
+          {fullyReady
+            ? "Offline pack ready for the trail"
+            : "CRITICAL — prepare offline pack before you hike"}
         </h2>
-        <p className="text-amber-900 text-sm mt-1">
-          Airplane Mode in a Safari tab always fails. You need the Home Screen
-          icon after both <strong>Offline engine</strong> and{" "}
-          <strong>Pages cached</strong> are green.
+        <p
+          className={`text-sm mt-1 ${
+            fullyReady ? "text-green-900" : "text-red-900"
+          }`}
+        >
+          This app must work with zero signal. Do not rely on a Safari tab in
+          Airplane Mode. Install to Home Screen and complete Prepare on Wi‑Fi
+          first. GPS and compass still need Location Services enabled.
         </p>
       </div>
 
-      <div className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-900">
-        Use <strong>Safari</strong> (not Chrome), not Private Browsing. After this
-        update, tap <strong>Retry</strong> once so the fixed offline engine can
-        install.
-      </div>
-
-      <ol className="list-decimal pl-5 space-y-2 text-sm text-amber-950">
-        <li>
-          Stay online on{" "}
-          <span className="font-mono text-xs bg-amber-100 px-1 rounded">
-            munda-biddi-app.vercel.app
-          </span>{" "}
-          in Safari
-        </li>
-        <li>
-          Tap <strong>Retry</strong> below — wait for Offline engine + Pages cached
-          green
-        </li>
-        <li>
-          Share{" "}
-          <span className="inline-block px-1.5 py-0.5 bg-white border border-amber-300 rounded text-xs">
-            □↑
-          </span>{" "}
-          → <strong>Add to Home Screen</strong>
-        </li>
-        <li>Open the Home Screen icon while still online</li>
-        <li>Visit Map / Help / Checklist; download map tiles on Help</li>
-        <li>Airplane Mode → open from the Home Screen icon only</li>
-      </ol>
+      {!fullyReady && (
+        <div className="rounded-lg border border-red-400 bg-white p-3 text-sm text-red-950 space-y-1">
+          <p className="font-semibold">Before you leave reception:</p>
+          <ol className="list-decimal pl-5 space-y-1">
+            <li>
+              Open this site in <strong>Safari</strong> (not Chrome / Private)
+            </li>
+            <li>
+              Tap <strong>Prepare offline pack</strong> and wait until every badge
+              is green (map download can take several minutes)
+            </li>
+            <li>
+              Share → <strong>Add to Home Screen</strong>
+            </li>
+            <li>
+              Open the <strong>Home Screen icon</strong> once while still online
+            </li>
+            <li>
+              Only then use Airplane Mode — always from the Home Screen icon
+            </li>
+          </ol>
+          <p className="text-xs pt-1">
+            Also carry a paper topo map, compass, and a dedicated GPS with the GPX
+            loaded. This phone app is a backup, not your only navigation.
+          </p>
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-2 text-xs">
-        <span
-          className={`px-2.5 py-1 rounded-full font-medium ${
-            online ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-          }`}
-        >
-          {online ? "Online now" : "Offline now"}
-        </span>
-        <span
-          className={`px-2.5 py-1 rounded-full font-medium ${
-            standalone
-              ? "bg-green-100 text-green-800"
-              : "bg-amber-100 text-amber-900"
-          }`}
-        >
-          {standalone
-            ? "Opened from Home Screen"
-            : "Still in Safari tab (install next)"}
-        </span>
-        <span
-          className={`px-2.5 py-1 rounded-full font-medium ${
-            swReady ? "bg-green-100 text-green-800" : "bg-slate-200 text-slate-600"
-          }`}
-        >
-          {swReady ? "Offline engine ready" : "Offline engine not ready"}
-        </span>
-        <span
-          className={`px-2.5 py-1 rounded-full font-medium ${
-            cached
-              ? "bg-green-100 text-green-800"
-              : caching
-                ? "bg-amber-100 text-amber-900"
-                : "bg-slate-200 text-slate-600"
-          }`}
-        >
-          {cached
-            ? "App pages cached for offline"
-            : caching
-              ? "Caching app pages…"
-              : "Pages not cached yet"}
-        </span>
+        <Badge ok={online} good="Online now" bad="Offline now" />
+        <Badge
+          ok={standalone}
+          good="Opened from Home Screen"
+          bad="Safari tab — install to Home Screen"
+          warn={!standalone}
+        />
+        <Badge ok={swReady} good="Offline engine ready" bad="Offline engine missing" />
+        <Badge ok={pagesReady} good="App pages cached" bad="App pages not cached" />
+        <Badge ok={tilesReady} good="Map tiles cached" bad="Map tiles not cached" />
       </div>
 
-      <p className="text-sm text-amber-950 bg-white/70 border border-amber-200 rounded-lg px-3 py-2">
+      {progress && progress.total > 0 && (
+        <div className="space-y-1">
+          <div className="h-2 rounded-full bg-white/80 overflow-hidden">
+            <div
+              className="h-full bg-amber-700 transition-all"
+              style={{
+                width: `${Math.round((progress.current / progress.total) * 100)}%`,
+              }}
+            />
+          </div>
+          <p className="text-xs text-slate-700">
+            {progress.phase} — keep this screen open
+          </p>
+        </div>
+      )}
+
+      <p className="text-sm bg-white/80 border border-slate-200 rounded-lg px-3 py-2 text-slate-900">
         {status}
       </p>
 
       <button
         type="button"
-        onClick={() => void prepareOffline()}
+        onClick={() => void runPrep()}
         disabled={busy || !online}
-        className="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-amber-700 text-white text-sm font-semibold disabled:opacity-50"
+        className="w-full sm:w-auto px-4 py-3 rounded-lg bg-red-800 text-white text-sm font-bold disabled:opacity-50"
       >
-        {busy ? "Working…" : "Retry"}
+        {busy ? "Preparing… do not close" : "Prepare offline pack"}
       </button>
 
-      {readyForAirplane ? (
-        <p className="text-sm font-medium text-green-800 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-          Ready for Airplane Mode — open from the Home Screen icon only.
+      {fullyReady ? (
+        <p className="text-sm font-semibold text-green-900">
+          Ready. Open from the Home Screen icon in Airplane Mode. Trail Map, GPS,
+          compass, checklist, and guide pages work offline. 3D Preview needs
+          internet — do not depend on it on the ridge.
         </p>
       ) : (
-        <p className="text-sm text-amber-900">
-          Need green on Offline engine + Pages cached. Safari-tab amber is normal
-          until you open the Home Screen icon.
+        <p className="text-sm font-semibold text-red-900">
+          Not ready for the hike. All five checks must pass (Home Screen badge
+          turns green after you open the installed icon).
         </p>
       )}
     </div>
+  );
+}
+
+function Badge({
+  ok,
+  good,
+  bad,
+  warn,
+}: {
+  ok: boolean;
+  good: string;
+  bad: string;
+  warn?: boolean;
+}) {
+  const cls = ok
+    ? "bg-green-100 text-green-800"
+    : warn
+      ? "bg-amber-100 text-amber-900"
+      : "bg-slate-200 text-slate-700";
+  return (
+    <span className={`px-2.5 py-1 rounded-full font-medium ${cls}`}>
+      {ok ? good : bad}
+    </span>
   );
 }

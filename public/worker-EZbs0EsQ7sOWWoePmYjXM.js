@@ -1,0 +1,1 @@
+self.addEventListener("message",a=>{a.data&&"SKIP_WAITING"===a.data.type&&self.skipWaiting(),a.data&&"CLIENTS_CLAIM"===a.data.type&&self.clients.claim()});

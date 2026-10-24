@@ -22,10 +22,10 @@ export default function ThreeDPreviewPage() {
         </p>
       </header>
 
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-900">
-        <strong>Planning preview only.</strong> This 3D view needs an internet connection and a
-        Mapbox token. Use the Trail Map tab for GPS, compass, and offline prep — and always carry a
-        dedicated GPS, topo map, and compass on the hike.
+      <div className="bg-red-50 border border-red-300 rounded-xl p-4 text-sm text-red-950">
+        <strong>NOT for offline navigation.</strong> 3D Preview needs internet (satellite +
+        elevation). On the ridge use <strong>Trail Map</strong> (after Prepare offline pack), plus
+        a dedicated GPS, paper topo, and compass. Never treat this flyover as your only nav.
       </div>
 
       <Mapbox3DTrail />
