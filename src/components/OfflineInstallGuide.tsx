@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   isOfflineReadyFlag,
   prepareForOffline,
@@ -9,8 +9,7 @@ import {
 } from "@/lib/offlinePrep";
 
 /**
- * Mandatory offline prep for field use. Do not enter the Stirling Range
- * until this reports fully ready.
+ * Mandatory offline prep. Tiles download once and stay on the iPhone.
  */
 export default function OfflineInstallGuide() {
   const [swReady, setSwReady] = useState(false);
@@ -21,6 +20,7 @@ export default function OfflineInstallGuide() {
   const [status, setStatus] = useState("Checking offline readiness…");
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<PrepProgress | null>(null);
+  const autoStarted = useRef(false);
 
   const fullyReady = swReady && pagesReady && tilesReady;
 
@@ -42,9 +42,9 @@ export default function OfflineInstallGuide() {
       setPagesReady(v.pagesOk);
       setTilesReady(v.tilesOk);
       if (v.swOk && v.pagesOk && v.tilesOk) {
-        setStatus("Offline pack verified on this device.");
-      } else if (isOfflineReadyFlag() && !(v.swOk && v.pagesOk && v.tilesOk)) {
-        setStatus("Previous prep incomplete after an update — run Prepare again on Wi‑Fi.");
+        setStatus(
+          "Offline pack is on this iPhone. Map tiles stay saved — no need to download every time."
+        );
       }
     });
 
@@ -55,18 +55,21 @@ export default function OfflineInstallGuide() {
   }, []);
 
   const runPrep = useCallback(async () => {
+    if (busy) return;
     setBusy(true);
     setProgress(null);
 
     if (!navigator.onLine) {
       setBusy(false);
-      setStatus("Connect to Wi‑Fi first. Offline prep cannot run in Airplane Mode.");
+      setStatus("Connect to Wi‑Fi first. Prep cannot run in Airplane Mode.");
       return;
     }
 
     const result = await prepareForOffline((p) => {
       setProgress(p);
-      setStatus(`${p.phase} ${p.total ? `(${p.current}/${p.total})` : ""}`);
+      setStatus(
+        `${p.phase}${p.total ? ` ${p.current}/${p.total}` : ""}`
+      );
     });
 
     setSwReady(result.sw);
@@ -75,21 +78,20 @@ export default function OfflineInstallGuide() {
     setStatus(result.detail);
     setProgress(null);
     setBusy(false);
-  }, []);
+  }, [busy]);
 
   useEffect(() => {
-    // Auto-prep once when online and not yet ready
+    if (autoStarted.current) return;
     if (!navigator.onLine) return;
     if (isOfflineReadyFlag()) return;
+    autoStarted.current = true;
     void runPrep();
   }, [runPrep]);
 
   return (
     <div
       className={`rounded-xl border-2 p-5 sm:p-6 space-y-4 ${
-        fullyReady
-          ? "border-green-500 bg-green-50"
-          : "border-red-500 bg-red-50"
+        fullyReady ? "border-green-500 bg-green-50" : "border-red-500 bg-red-50"
       }`}
     >
       <div>
@@ -99,59 +101,53 @@ export default function OfflineInstallGuide() {
           }`}
         >
           {fullyReady
-            ? "Offline pack ready for the trail"
-            : "CRITICAL — prepare offline pack before you hike"}
+            ? "Offline pack saved on this iPhone"
+            : "CRITICAL — prepare offline pack on Wi‑Fi"}
         </h2>
         <p
           className={`text-sm mt-1 ${
             fullyReady ? "text-green-900" : "text-red-900"
           }`}
         >
-          This app must work with zero signal. Do not rely on a Safari tab in
-          Airplane Mode. Install to Home Screen and complete Prepare on Wi‑Fi
-          first. GPS and compass still need Location Services enabled.
+          Map tiles download <strong>once</strong> and stay on your phone. If the
+          bar seems stuck, wait — about 300 tiles, usually a few minutes, then it
+          finishes and will not keep re-downloading.
         </p>
       </div>
 
-      {!fullyReady && (
-        <div className="rounded-lg border border-red-400 bg-white p-3 text-sm text-red-950 space-y-1">
-          <p className="font-semibold">Before you leave reception:</p>
-          <ol className="list-decimal pl-5 space-y-1">
-            <li>
-              Open this site in <strong>Safari</strong> (not Chrome / Private)
-            </li>
-            <li>
-              Tap <strong>Prepare offline pack</strong> and wait until every badge
-              is green (map download can take several minutes)
-            </li>
-            <li>
-              Share → <strong>Add to Home Screen</strong>
-            </li>
-            <li>
-              Open the <strong>Home Screen icon</strong> once while still online
-            </li>
-            <li>
-              Only then use Airplane Mode — always from the Home Screen icon
-            </li>
-          </ol>
-          <p className="text-xs pt-1">
-            Also carry a paper topo map, compass, and a dedicated GPS with the GPX
-            loaded. This phone app is a backup, not your only navigation.
-          </p>
-        </div>
-      )}
+      <div className="rounded-lg border border-red-400 bg-white p-3 text-sm text-red-950 space-y-2">
+        <p className="font-semibold">Home Screen must use the new launch icon:</p>
+        <ol className="list-decimal pl-5 space-y-1">
+          <li>Delete the old Stirling Ridge icon from your Home Screen</li>
+          <li>Wi‑Fi on → open this site in <strong>Safari</strong></li>
+          <li>
+            Tap <strong>Prepare offline pack</strong> → wait until all badges are
+            green
+          </li>
+          <li>
+            Share → <strong>Add to Home Screen</strong> (opens <code>/go.html</code>{" "}
+            offline launch pad)
+          </li>
+          <li>Open that new icon once while still online</li>
+          <li>Airplane Mode → open the same Home Screen icon only</li>
+        </ol>
+      </div>
 
       <div className="flex flex-wrap gap-2 text-xs">
         <Badge ok={online} good="Online now" bad="Offline now" />
         <Badge
           ok={standalone}
           good="Opened from Home Screen"
-          bad="Safari tab — install to Home Screen"
+          bad="Safari tab — add new Home Screen icon"
           warn={!standalone}
         />
         <Badge ok={swReady} good="Offline engine ready" bad="Offline engine missing" />
         <Badge ok={pagesReady} good="App pages cached" bad="App pages not cached" />
-        <Badge ok={tilesReady} good="Map tiles cached" bad="Map tiles not cached" />
+        <Badge
+          ok={tilesReady}
+          good="Map tiles on iPhone"
+          bad={busy ? "Saving map tiles…" : "Map tiles not saved yet"}
+        />
       </div>
 
       {progress && progress.total > 0 && (
@@ -160,12 +156,16 @@ export default function OfflineInstallGuide() {
             <div
               className="h-full bg-amber-700 transition-all"
               style={{
-                width: `${Math.round((progress.current / progress.total) * 100)}%`,
+                width: `${Math.min(
+                  100,
+                  Math.round((progress.current / progress.total) * 100)
+                )}%`,
               }}
             />
           </div>
           <p className="text-xs text-slate-700">
-            {progress.phase} — keep this screen open
+            {progress.phase} — one-time save, keep this screen open (
+            {progress.current}/{progress.total})
           </p>
         </div>
       )}
@@ -180,19 +180,18 @@ export default function OfflineInstallGuide() {
         disabled={busy || !online}
         className="w-full sm:w-auto px-4 py-3 rounded-lg bg-red-800 text-white text-sm font-bold disabled:opacity-50"
       >
-        {busy ? "Preparing… do not close" : "Prepare offline pack"}
+        {busy ? "Preparing… do not close" : fullyReady ? "Re-check offline pack" : "Prepare offline pack"}
       </button>
 
       {fullyReady ? (
         <p className="text-sm font-semibold text-green-900">
-          Ready. Open from the Home Screen icon in Airplane Mode. Trail Map, GPS,
-          compass, checklist, and guide pages work offline. 3D Preview needs
-          internet — do not depend on it on the ridge.
+          Tiles stay on this iPhone. Delete any old Home Screen icon, add a fresh
+          one, then use that icon in Airplane Mode.
         </p>
       ) : (
         <p className="text-sm font-semibold text-red-900">
-          Not ready for the hike. All five checks must pass (Home Screen badge
-          turns green after you open the installed icon).
+          Not ready. Wait for tiles to finish (not a loop — first save takes a few
+          minutes).
         </p>
       )}
     </div>

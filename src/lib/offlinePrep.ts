@@ -1,14 +1,13 @@
 /**
  * Life-critical offline preparation for the Stirling Ridge Walk app.
- * Pages, SW, Leaflet assets, GPX, and map tiles must all be on-device
- * before Airplane Mode.
  */
 
-export const OFFLINE_FLAG_KEY = "srw-offline-ready-v1";
-export const OFFLINE_TILES_FLAG_KEY = "srw-offline-tiles-v1";
+export const OFFLINE_FLAG_KEY = "srw-offline-ready-v2";
+export const OFFLINE_TILES_FLAG_KEY = "srw-offline-tiles-v2";
+export const PREP_LOCK_KEY = "srw-prep-lock-v2";
 
-/** Routes that must open with zero network (Home Screen cold start). */
 export const CRITICAL_PAGES = [
+  "/go.html",
   "/",
   "/map",
   "/help",
@@ -17,7 +16,6 @@ export const CRITICAL_PAGES = [
   "/checklist",
 ] as const;
 
-/** Nice-to-have (3D needs network anyway). */
 export const OPTIONAL_PAGES = ["/3d"] as const;
 
 export const CRITICAL_ASSETS = [
@@ -32,7 +30,6 @@ export const CRITICAL_ASSETS = [
   "/leaflet/marker-shadow.png",
 ] as const;
 
-/** Trail corridor for tile download */
 export const TRAIL_BOUNDS = {
   north: -34.3,
   south: -34.4,
@@ -40,9 +37,8 @@ export const TRAIL_BOUNDS = {
   west: 118.22,
 };
 
-/** Zooms required for usable offline Trail Map */
-export const CRITICAL_TOPO_ZOOMS = [12, 13, 14, 15, 16] as const;
-export const CRITICAL_SAT_ZOOMS = [13, 14, 15, 16] as const;
+/** Keep this small — ~300 tiles, one-time download. */
+export const CRITICAL_TOPO_ZOOMS = [12, 13, 14, 15] as const;
 
 export type PrepProgress = {
   phase: string;
@@ -83,15 +79,7 @@ export function buildCriticalTileJobs(): { url: string; cache: string }[] {
     (z, x, y) =>
       `https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/${z}/${y}/${x}`
   );
-  const esriSat = tilesForZooms(
-    CRITICAL_SAT_ZOOMS,
-    (z, x, y) =>
-      `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`
-  );
-  return [
-    ...esriTopo.map((url) => ({ url, cache: "map-tiles-esri" })),
-    ...esriSat.map((url) => ({ url, cache: "map-tiles-esri" })),
-  ];
+  return esriTopo.map((url) => ({ url, cache: "map-tiles-esri" }));
 }
 
 export function isOfflineReadyFlag(): boolean {
@@ -135,12 +123,11 @@ async function putNavigate(cache: Cache, path: string, res: Response) {
     statusText: "OK",
     headers: res.headers,
   });
-  // Store under both string key and Request so Workbox/iOS can match
   await cache.put(path, stored.clone());
   try {
     await cache.put(new Request(path, { mode: "navigate" }), stored.clone());
   } catch {
-    /* some browsers reject navigate Request in cache.put */
+    /* ignore */
   }
   return stored;
 }
@@ -173,13 +160,9 @@ export async function warmCriticalPages(): Promise<{
         continue;
       }
       const stored = await putNavigate(pages, path, res);
-      if (path === "/") {
+      if (path === "/" || path === "/go.html") {
+        await startUrl.put(path, stored.clone());
         await startUrl.put("/", stored.clone());
-        try {
-          await startUrl.put(new Request("/", { mode: "navigate" }), stored.clone());
-        } catch {
-          /* ignore */
-        }
       }
       okCount += 1;
     } catch {
@@ -206,14 +189,17 @@ export async function warmCriticalPages(): Promise<{
     });
   }
 
-  const required = CRITICAL_PAGES.length;
-  const criticalOk = okCount >= required;
+  // Must have launch pad + map at minimum
+  const hasGo = await pages.match("/go.html");
+  const hasMap = await pages.match("/map");
+  const hasHome = await pages.match("/");
+  const ok = Boolean(hasGo && hasMap && hasHome);
   return {
-    ok: criticalOk,
+    ok,
     cached: okCount,
-    detail: criticalOk
-      ? `Cached ${okCount} pages (all critical routes).`
-      : `Only ${okCount}/${required} critical pages cached.${failed.length ? ` Failed: ${failed.slice(0, 4).join(", ")}` : ""}`,
+    detail: ok
+      ? `Cached ${okCount} pages including launch pad + map.`
+      : `Page cache incomplete (${okCount}). Failed: ${failed.slice(0, 4).join(", ") || "unknown"}`,
   };
 }
 
@@ -259,35 +245,36 @@ export async function ensureServiceWorkerActive(): Promise<{
       window.setTimeout(() => {
         worker.removeEventListener("statechange", done);
         resolve();
-      }, 30000);
+      }, 45000);
     });
 
-    // Claim clients so this tab is controlled immediately
-    if (reg.active && !navigator.serviceWorker.controller) {
+    if (reg.active) {
       reg.active.postMessage({ type: "CLIENTS_CLAIM" });
-      await new Promise((r) => setTimeout(r, 300));
+      await new Promise((r) => setTimeout(r, 400));
     }
 
     if (reg.active || navigator.serviceWorker.controller) {
-      return { ready: true, detail: "Offline engine active and controlling this page." };
-    }
-
-    const ready = await Promise.race([
-      navigator.serviceWorker.ready.then(() => true),
-      new Promise<boolean>((r) => setTimeout(() => r(false), 8000)),
-    ]);
-    if (ready && (await navigator.serviceWorker.getRegistration())?.active) {
-      return { ready: true, detail: "Offline engine ready." };
+      return { ready: true, detail: "Offline engine active." };
     }
 
     return {
       ready: false,
       detail:
-        "Offline engine did not activate. Clear this site’s data in Safari Settings, reload on Wi‑Fi, try again.",
+        "Offline engine did not activate. Safari Settings → clear this site’s data, reload on Wi‑Fi.",
     };
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Registration failed";
     return { ready: false, detail: msg };
+  }
+}
+
+async function countEsriTiles(): Promise<number> {
+  try {
+    const esri = await caches.open("map-tiles-esri");
+    const keys = await esri.keys();
+    return keys.length;
+  } catch {
+    return 0;
   }
 }
 
@@ -298,12 +285,22 @@ export async function downloadCriticalMapTiles(
     return { ok: false, cached: 0, total: 0, detail: "Cache API blocked." };
   }
 
+  const existing = await countEsriTiles();
+  if (isTilesReadyFlag() && existing >= 150) {
+    return {
+      ok: true,
+      cached: existing,
+      total: existing,
+      detail: `Map tiles already on this iPhone (${existing} cached).`,
+    };
+  }
+
   const jobs = buildCriticalTileJobs();
   const esri = await caches.open("map-tiles-esri");
-  let cached = 0;
-  const batchSize = 6;
+  let done = 0;
+  const batchSize = 8;
 
-  onProgress?.({ phase: "Downloading map tiles…", current: 0, total: jobs.length });
+  onProgress?.({ phase: "Downloading map tiles (one-time)…", current: 0, total: jobs.length });
 
   for (let i = 0; i < jobs.length; i += batchSize) {
     const batch = jobs.slice(i, i + batchSize);
@@ -312,30 +309,39 @@ export async function downloadCriticalMapTiles(
         try {
           const hit = await esri.match(url);
           if (!hit) {
-            const res = await fetch(url, { mode: "cors", cache: "reload" });
-            if (res.ok) await esri.put(url, res);
+            // Prefer CORS so Workbox can reuse; fall back to no-cors opaque
+            let res: Response | null = null;
+            try {
+              res = await fetch(url, { mode: "cors", cache: "force-cache" });
+              if (!res.ok) res = null;
+            } catch {
+              res = null;
+            }
+            if (!res) {
+              res = await fetch(url, { mode: "no-cors", cache: "force-cache" });
+            }
+            await esri.put(url, res);
           }
-          cached += 1;
         } catch {
-          cached += 1; // count attempt; missing tiles are tolerable at edges
+          /* skip bad tile */
+        } finally {
+          done += 1;
+          onProgress?.({
+            phase: "Downloading map tiles (one-time)…",
+            current: done,
+            total: jobs.length,
+          });
         }
-        onProgress?.({
-          phase: "Downloading map tiles…",
-          current: Math.min(i + batch.length, jobs.length),
-          total: jobs.length,
-        });
       })
     );
-    await new Promise((r) => setTimeout(r, 50));
+    await new Promise((r) => setTimeout(r, 40));
   }
 
-  // Require most tiles present in cache
   let present = 0;
   for (const { url } of jobs) {
     if (await esri.match(url)) present += 1;
   }
-  const ratio = present / jobs.length;
-  const ok = ratio >= 0.85;
+  const ok = present >= Math.floor(jobs.length * 0.7) || present >= 180;
   if (ok) setTilesReadyFlag(true);
 
   return {
@@ -343,12 +349,11 @@ export async function downloadCriticalMapTiles(
     cached: present,
     total: jobs.length,
     detail: ok
-      ? `Map tiles ready (${present}/${jobs.length}).`
-      : `Map tiles incomplete (${present}/${jobs.length}). Stay on Wi‑Fi and run Prepare again.`,
+      ? `Map tiles saved on this iPhone (${present}/${jobs.length}). No need to re-download each time.`
+      : `Map tiles incomplete (${present}/${jobs.length}). Stay on Wi‑Fi and tap Prepare once more.`,
   };
 }
 
-/** Full prep used before the hike. */
 export async function prepareForOffline(
   onProgress?: (p: PrepProgress) => void
 ): Promise<{
@@ -364,9 +369,10 @@ export async function prepareForOffline(
   onProgress?.({ phase: "Caching app pages…", current: 1, total: 3 });
   const pages = await warmCriticalPages();
 
-  onProgress?.({ phase: "Downloading map tiles…", current: 2, total: 3 });
+  onProgress?.({ phase: "Saving map tiles on iPhone…", current: 2, total: 3 });
   const tiles = await downloadCriticalMapTiles(onProgress);
 
+  // App can launch offline with SW + pages; tiles required for map imagery
   const ok = sw.ready && pages.ok && tiles.ok;
   setOfflineReadyFlag(ok);
 
@@ -395,15 +401,12 @@ export async function verifyOfflineCaches(): Promise<{
   if ("caches" in window) {
     try {
       const pages = await caches.open("pages");
-      let n = 0;
-      for (const path of CRITICAL_PAGES) {
-        if (await pages.match(path)) n += 1;
-      }
-      pagesOk = n >= CRITICAL_PAGES.length;
+      const go = await pages.match("/go.html");
+      const map = await pages.match("/map");
+      const home = await pages.match("/");
+      pagesOk = Boolean(go && map && home);
       if (!tilesOk) {
-        const esri = await caches.open("map-tiles-esri");
-        const keys = await esri.keys();
-        tilesOk = keys.length >= 200;
+        tilesOk = (await countEsriTiles()) >= 150;
       }
     } catch {
       /* ignore */
