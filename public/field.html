@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Stirling Field"/>
+<meta name="theme-color" content="#7c2d12"/>
+<link rel="manifest" href="/manifest.json"/>
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"/>
+<title>Stirling Ridge — Field (Offline)</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#0f172a;color:#f8fafc;min-height:100vh}
+header{padding:14px 16px 8px;background:#7c2d12}
+header h1{margin:0;font-size:1.15rem}
+header p{margin:4px 0 0;font-size:.75rem;color:#fed7aa}
+.banner{padding:8px 16px;font-size:.8rem;background:#14532d;color:#bbf7d0}
+.banner.warn{background:#7f1d1d;color:#fecaca}
+.tabs{display:flex;gap:4px;padding:8px;background:#111827;position:sticky;top:0;z-index:5}
+.tabs button{flex:1;border:0;border-radius:10px;padding:10px 6px;font-weight:700;font-size:.8rem;background:#1e293b;color:#e2e8f0}
+.tabs button.on{background:#ea580c;color:#fff}
+main{padding:12px 16px 40px}
+.panel{display:none}
+.panel.on{display:block}
+#mapWrap{background:#020617;border-radius:14px;overflow:hidden;border:1px solid #334155;position:relative}
+svg{display:block;width:100%;height:min(62vh,520px);touch-action:none}
+.dot{fill:#38bdf8;stroke:#fff;stroke-width:2}
+.peak{fill:#fbbf24}
+.camp{fill:#4ade80}
+.trail{fill:none;stroke:#fb923c;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.gridline{stroke:#1e293b;stroke-width:1}
+.hud{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.pill{background:#1e293b;border-radius:999px;padding:8px 12px;font-size:.78rem}
+button.act{width:100%;margin-top:10px;padding:14px;border:0;border-radius:12px;font-weight:800;background:#ea580c;color:#fff;font-size:1rem}
+button.act.secondary{background:#334155}
+.compass{width:160px;height:160px;margin:16px auto;border-radius:50%;border:4px solid #64748b;position:relative;background:radial-gradient(circle at center,#1e293b,#0f172a)}
+.needle{position:absolute;left:50%;top:50%;width:4px;height:60px;margin-left:-2px;margin-top:-60px;background:linear-gradient(#ef4444 50%,#e2e8f0 50%);transform-origin:bottom center;border-radius:2px}
+.clist label{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #1e293b;font-size:.9rem}
+.meta{font-size:.8rem;color:#94a3b8;line-height:1.4}
+a.link{color:#fdba74}
+</style>
+</head>
+<body>
+<header>
+  <h1>Stirling Ridge — Field Mode</h1>
+  <p>Works offline · no map tiles · GPS + trail line</p>
+</header>
+<div id="net" class="banner">Checking connection…</div>
+<nav class="tabs">
+  <button type="button" class="on" data-tab="map">Map</button>
+  <button type="button" data-tab="compass">Compass</button>
+  <button type="button" data-tab="check">Checklist</button>
+  <button type="button" data-tab="help">Help</button>
+</nav>
+<main>
+  <section id="map" class="panel on">
+    <div id="mapWrap"><svg id="svg" viewBox="0 0 1000 700" role="img" aria-label="Trail map"></svg></div>
+    <div class="hud">
+      <span class="pill" id="gpsPill">GPS: waiting…</span>
+      <span class="pill" id="accPill">Accuracy: —</span>
+    </div>
+    <button type="button" class="act" id="btnGps">Enable / refresh GPS</button>
+    <button type="button" class="act secondary" id="btnCenter">Center on me</button>
+    <p class="meta" style="margin-top:12px">Orange = ridge route · Yellow = peaks · Green = camps · Blue = you. This map does not need internet or downloaded tiles.</p>
+  </section>
+  <section id="compass" class="panel">
+    <div class="compass"><div class="needle" id="needle"></div></div>
+    <p class="meta" style="text-align:center" id="bearing">Bearing: —</p>
+    <button type="button" class="act" id="btnCompass">Enable compass</button>
+    <p class="meta">On iPhone: tap Enable, then allow motion access. Hold phone flat.</p>
+  </section>
+  <section id="check" class="panel">
+    <div id="checklist"></div>
+  </section>
+  <section id="help" class="panel">
+    <p class="meta"><strong>This Field Mode page is the offline app.</strong> Add <em>this</em> screen to your Home Screen while online. It does not use Safari tabs or map-tile downloads.</p>
+    <p class="meta">1. Stay on Wi‑Fi<br/>2. Share → Add to Home Screen<br/>3. Open the icon once online<br/>4. Airplane Mode → open the same icon</p>
+    <p class="meta">Still carry PLB, paper map, compass, and a dedicated GPS with GPX. Phone battery dies; this is a backup.</p>
+    <p class="meta"><a class="link" href="/">Full website (needs signal)</a></p>
+  </section>
+</main>
+<script>
+window.__FIELD__ = {"route":[[118.39204,-34.318061],[118.385581,-34.318096],[118.380002,-34.31815],[118.373844,-34.318114],[118.3676,-34.31815],[118.360605,-34.318185],[118.35421,-34.318221],[118.348116,-34.318221],[118.340392,-34.318291],[118.333954,-34.318291],[118.328547,-34.318221],[118.325457,-34.319178],[118.326058,-34.320507],[118.326444,-34.322438],[118.326852,-34.324388],[118.32771,-34.326284],[118.328332,-34.32841],[118.32874,-34.330377],[118.329534,-34.332114],[118.330435,-34.333903],[118.331272,-34.335711],[118.331186,-34.337925],[118.331937,-34.339874],[118.333547,-34.341468],[118.335263,-34.342922],[118.336122,-34.344853],[118.337157,-34.346917],[118.337811,-34.348308],[118.337886,-34.349521],[118.338085,-34.35081],[118.337361,-34.351855],[118.336658,-34.352976],[118.33617,-34.353875],[118.334786,-34.354995],[118.333847,-34.355823],[118.332908,-34.355943],[118.331632,-34.356186],[118.331224,-34.357023],[118.331487,-34.357847],[118.330746,-34.358166],[118.329588,-34.358286],[118.328955,-34.358467],[118.327592,-34.358494],[118.326841,-34.358745],[118.327174,-34.359378],[118.326487,-34.359831],[118.325881,-34.359437],[118.325216,-34.359264],[118.324577,-34.359255],[118.324009,-34.359224],[118.323354,-34.359034],[118.322592,-34.358967],[118.321906,-34.358998],[118.32094,-34.358936],[118.320082,-34.358919],[118.319331,-34.359069],[118.318371,-34.358671],[118.3177,-34.358374],[118.317309,-34.358051],[118.316761,-34.357856],[118.315989,-34.35786],[118.31527,-34.357989],[118.314455,-34.357958],[118.313806,-34.357953],[118.313258,-34.357785],[118.31232,-34.357838],[118.31159,-34.357905],[118.310506,-34.357692],[118.309417,-34.357621],[118.309412,-34.357329],[118.308666,-34.357209],[118.308216,-34.357037],[118.307744,-34.356935],[118.306816,-34.356637],[118.307132,-34.356288],[118.306928,-34.356093],[118.306193,-34.356147],[118.306065,-34.35569],[118.305501,-34.355845],[118.304986,-34.356226],[118.304375,-34.356412],[118.303817,-34.35682],[118.303329,-34.357103],[118.302519,-34.356997],[118.301843,-34.35693],[118.301167,-34.356882],[118.300352,-34.356749],[118.299499,-34.356575],[118.298919,-34.356328],[118.298372,-34.356062],[118.29768,-34.355863],[118.29702,-34.355876],[118.296441,-34.355766],[118.295926,-34.355677],[118.295084,-34.355403],[118.294461,-34.355035],[118.293684,-34.354636],[118.293104,-34.354207],[118.292541,-34.354008],[118.292198,-34.354433],[118.291935,-34.354946],[118.291693,-34.355407],[118.291457,-34.35588],[118.291157,-34.356355],[118.290486,-34.356736],[118.290449,-34.357245],[118.290545,-34.357719],[118.290368,-34.358361],[118.290041,-34.358945],[118.289381,-34.359176],[118.289129,-34.35957],[118.288936,-34.359968],[118.28877,-34.360354],[118.288475,-34.360708],[118.288593,-34.361275],[118.288512,-34.361598],[118.288378,-34.362054],[118.288174,-34.36228],[118.288072,-34.362647],[118.287767,-34.36294],[118.287541,-34.363267],[118.287091,-34.363582],[118.286619,-34.363887],[118.28597,-34.364171],[118.285444,-34.364441],[118.284698,-34.364614],[118.284065,-34.364804],[118.283518,-34.365012],[118.282982,-34.365158],[118.282445,-34.365201],[118.281823,-34.365016],[118.281179,-34.364848],[118.280761,-34.364596],[118.280396,-34.364219],[118.280128,-34.363812],[118.279795,-34.363551],[118.279463,-34.363272],[118.278985,-34.363006],[118.278781,-34.362515],[118.278524,-34.362147],[118.278105,-34.361802],[118.277564,-34.361509],[118.277236,-34.361098],[118.276566,-34.360774],[118.276233,-34.3605],[118.275884,-34.360287],[118.275482,-34.360092],[118.275021,-34.360079],[118.27464,-34.360283],[118.274323,-34.360407],[118.27398,-34.360478],[118.273492,-34.36046],[118.272923,-34.360757],[118.272424,-34.360916],[118.27207,-34.361173],[118.271609,-34.361332],[118.271325,-34.361571],[118.271142,-34.361846],[118.270917,-34.362151],[118.270676,-34.362395],[118.270584,-34.362763],[118.270424,-34.363183],[118.270305,-34.36352],[118.270155,-34.363847],[118.269919,-34.364118],[118.269807,-34.364609],[118.269817,-34.365096],[118.269833,-34.365725],[118.269442,-34.366186],[118.26927,-34.366677],[118.268921,-34.367062],[118.268632,-34.367377],[118.268208,-34.36762],[118.267698,-34.367589],[118.267194,-34.367669],[118.266711,-34.367655],[118.266229,-34.367492],[118.265923,-34.367731],[118.265461,-34.368023],[118.265402,-34.368652],[118.265365,-34.369231],[118.265279,-34.369639],[118.265048,-34.369985],[118.264694,-34.370255],[118.264614,-34.370733],[118.264399,-34.371215],[118.264142,-34.371716],[118.264093,-34.372274],[118.26411,-34.372708],[118.264045,-34.37308],[118.263981,-34.373589],[118.264378,-34.373992],[118.264437,-34.374443],[118.264351,-34.374873],[118.263434,-34.374767],[118.26272,-34.374753],[118.262087,-34.374846],[118.261873,-34.375214],[118.261331,-34.375524],[118.260896,-34.375869],[118.260172,-34.376161],[118.25963,-34.376595],[118.259035,-34.376241],[118.25823,-34.376219],[118.257855,-34.376591],[118.257329,-34.37644],[118.25697,-34.376077],[118.256642,-34.375661],[118.256471,-34.375196],[118.256074,-34.374678],[118.255709,-34.374984],[118.255221,-34.375426],[118.254298,-34.376188],[118.254078,-34.376755],[118.25388,-34.377294],[118.253552,-34.377737],[118.253139,-34.378233],[118.252683,-34.378476],[118.252195,-34.378579],[118.251863,-34.378552],[118.251364,-34.378512],[118.251203,-34.378906],[118.250999,-34.379455],[118.250886,-34.379889],[118.250897,-34.380394],[118.250473,-34.38042],[118.249915,-34.380013],[118.249728,-34.379407],[118.249701,-34.37876],[118.249813,-34.378233],[118.250184,-34.37768],[118.250602,-34.376994],[118.25065,-34.376259],[118.250505,-34.375816],[118.250194,-34.375085],[118.249926,-34.374302],[118.249964,-34.373598],[118.250704,-34.373394],[118.25146,-34.373027],[118.251187,-34.372557],[118.250795,-34.37207],[118.250704,-34.371424],[118.250243,-34.370985],[118.249862,-34.370463],[118.249492,-34.370047],[118.248869,-34.369542],[118.247802,-34.36921],[118.247099,-34.369197],[118.246289,-34.368798],[118.245254,-34.368568],[118.244052,-34.368302],[118.243124,-34.36809],[118.242416,-34.367868],[118.242314,-34.36778]],"peaks":[{"name":"Bluff Knoll","lat":-34.3756,"lng":118.2561,"elevation":1099},{"name":"East Peak","lat":-34.3605,"lng":118.274,"elevation":997},{"name":"Moongoongoonderup Hill","lat":-34.3636,"lng":118.28,"elevation":850},{"name":"Isongerup Peak South","lat":-34.3632,"lng":118.2876,"elevation":920},{"name":"Isongerup Peak","lat":-34.3595,"lng":118.2892,"elevation":962},{"name":"Isongerup Peak North","lat":-34.3572,"lng":118.2905,"elevation":962},{"name":"First Arrow","lat":-34.3569,"lng":118.3013,"elevation":900},{"name":"Second Arrow","lat":-34.3561,"lng":118.3071,"elevation":880},{"name":"Third Arrow","lat":-34.3578,"lng":118.3125,"elevation":920},{"name":"Baker's Knob","lat":-34.3592,"lng":118.3196,"elevation":890},{"name":"Pyungoorup Peak","lat":-34.3582,"lng":118.3297,"elevation":1012},{"name":"Ellen Peak","lat":-34.3517,"lng":118.3375,"elevation":1012}],"camps":[{"name":"Third Arrow Cave","lat":-34.3575,"lng":118.313,"elevation":null},{"name":"Baker's Knob Saddle","lat":-34.359,"lng":118.322,"elevation":null},{"name":"She-Oak Col","lat":-34.3551,"lng":118.2945,"elevation":null},{"name":"Eucalyptus Col","lat":-34.3636,"lng":118.2799,"elevation":null}],"checklist":["PLB / satellite messenger ON","4–5L water per day packed","Paper topo map + compass","GPX on dedicated GPS","Weather window confirmed","Exit routes known","Headtorch + spare batteries","Emergency shelter / bivy","First aid + blister kit","Tell someone your plan"],"meta":{"name":"Stirling Ridge Walk","distanceKm":25,"grade":6,"start":"Gnowellen Road","end":"Bluff Knoll Car Park"}};
+</script>
+<script>
+(function(){
+  var DATA = window.__FIELD__;
+  var net = document.getElementById('net');
+  function syncNet(){
+    if (navigator.onLine) {
+      net.className = 'banner';
+      net.textContent = 'Online — good time to Add to Home Screen if you have not already.';
+    } else {
+      net.className = 'banner warn';
+      net.textContent = 'OFFLINE — Field Mode is using data stored in this page. GPS still works if Location is on.';
+    }
+  }
+  syncNet();
+  window.addEventListener('online', syncNet);
+  window.addEventListener('offline', syncNet);
+
+  // Service worker — simple, dedicated
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/field-sw.js', { scope: '/' }).catch(function(){});
+  }
+
+  // Tabs
+  document.querySelectorAll('.tabs button').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.tabs button').forEach(function(b){ b.classList.remove('on'); });
+      document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('on'); });
+      btn.classList.add('on');
+      document.getElementById(btn.getAttribute('data-tab')).classList.add('on');
+    });
+  });
+
+  // Checklist
+  var cl = document.getElementById('checklist');
+  (DATA.checklist || []).forEach(function(item, i){
+    var id = 'c'+i;
+    var lab = document.createElement('label');
+    lab.innerHTML = '<input type="checkbox" id="'+id+'"/> <span></span>';
+    lab.querySelector('span').textContent = item;
+    var box = lab.querySelector('input');
+    try { box.checked = localStorage.getItem('field-check-'+i) === '1'; } catch(e){}
+    box.addEventListener('change', function(){
+      try { localStorage.setItem('field-check-'+i, box.checked ? '1' : '0'); } catch(e){}
+    });
+    cl.appendChild(lab);
+  });
+
+  // Map projection
+  var route = DATA.route || [];
+  var peaks = DATA.peaks || [];
+  var camps = DATA.camps || [];
+  var lngs = route.map(function(p){ return p[0]; });
+  var lats = route.map(function(p){ return p[1]; });
+  peaks.forEach(function(p){ lngs.push(p.lng); lats.push(p.lat); });
+  camps.forEach(function(p){ lngs.push(p.lng); lats.push(p.lat); });
+  var minLng = Math.min.apply(null, lngs), maxLng = Math.max.apply(null, lngs);
+  var minLat = Math.min.apply(null, lats), maxLat = Math.max.apply(null, lats);
+  var pad = 0.02;
+  minLng -= pad; maxLng += pad; minLat -= pad; maxLat += pad;
+  var W = 1000, H = 700, m = 40;
+  function xy(lng, lat){
+    var x = m + (lng - minLng) / (maxLng - minLng) * (W - 2*m);
+    var y = m + (maxLat - lat) / (maxLat - minLat) * (H - 2*m);
+    return [x, y];
+  }
+
+  var svg = document.getElementById('svg');
+  function clearMap(){ while (svg.firstChild) svg.removeChild(svg.firstChild); }
+  var me = null;
+
+  function draw(){
+    clearMap();
+    // grid
+    for (var g = 0; g <= 10; g++) {
+      var line1 = document.createElementNS('http://www.w3.org/2000/svg','line');
+      var x = m + g/10*(W-2*m);
+      line1.setAttribute('x1', x); line1.setAttribute('x2', x);
+      line1.setAttribute('y1', m); line1.setAttribute('y2', H-m);
+      line1.setAttribute('class','gridline'); svg.appendChild(line1);
+      var line2 = document.createElementNS('http://www.w3.org/2000/svg','line');
+      var y = m + g/10*(H-2*m);
+      line2.setAttribute('y1', y); line2.setAttribute('y2', y);
+      line2.setAttribute('x1', m); line2.setAttribute('x2', W-m);
+      line2.setAttribute('class','gridline'); svg.appendChild(line2);
+    }
+    var d = '';
+    route.forEach(function(p, i){
+      var pt = xy(p[0], p[1]);
+      d += (i ? 'L' : 'M') + pt[0].toFixed(1) + ' ' + pt[1].toFixed(1) + ' ';
+    });
+    var path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d', d);
+    path.setAttribute('class','trail');
+    svg.appendChild(path);
+
+    peaks.forEach(function(p){
+      var pt = xy(p.lng, p.lat);
+      var c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      c.setAttribute('cx', pt[0]); c.setAttribute('cy', pt[1]); c.setAttribute('r', 5);
+      c.setAttribute('class','peak'); svg.appendChild(c);
+      var t = document.createElementNS('http://www.w3.org/2000/svg','text');
+      t.setAttribute('x', pt[0] + 7); t.setAttribute('y', pt[1] + 3);
+      t.setAttribute('fill', '#fde68a'); t.setAttribute('font-size', '11');
+      t.textContent = p.name + (p.elevation ? ' ' + p.elevation + 'm' : '');
+      svg.appendChild(t);
+    });
+    camps.forEach(function(p){
+      var pt = xy(p.lng, p.lat);
+      var c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      c.setAttribute('cx', pt[0]); c.setAttribute('cy', pt[1]); c.setAttribute('r', 5);
+      c.setAttribute('class','camp'); svg.appendChild(c);
+      var t = document.createElementNS('http://www.w3.org/2000/svg','text');
+      t.setAttribute('x', pt[0] + 7); t.setAttribute('y', pt[1] + 3);
+      t.setAttribute('fill', '#bbf7d0'); t.setAttribute('font-size', '11');
+      t.textContent = p.name;
+      svg.appendChild(t);
+    });
+    // start/end labels
+    if (route.length) {
+      var s = xy(route[0][0], route[0][1]);
+      var e = xy(route[route.length-1][0], route[route.length-1][1]);
+      [['START', s], ['FINISH', e]].forEach(function(pair){
+        var t = document.createElementNS('http://www.w3.org/2000/svg','text');
+        t.setAttribute('x', pair[1][0]); t.setAttribute('y', pair[1][1] - 8);
+        t.setAttribute('fill', '#fff'); t.setAttribute('font-size', '12'); t.setAttribute('font-weight','700');
+        t.setAttribute('text-anchor','middle'); t.textContent = pair[0]; svg.appendChild(t);
+      });
+    }
+    if (me) {
+      var pt = xy(me.lng, me.lat);
+      var c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      c.setAttribute('cx', pt[0]); c.setAttribute('cy', pt[1]); c.setAttribute('r', 8);
+      c.setAttribute('class','dot'); svg.appendChild(c);
+    }
+  }
+  draw();
+
+  var watchId = null;
+  function onPos(pos){
+    me = { lng: pos.coords.longitude, lat: pos.coords.latitude };
+    document.getElementById('gpsPill').textContent = 'GPS: ' + me.lat.toFixed(5) + ', ' + me.lng.toFixed(5);
+    document.getElementById('accPill').textContent = 'Accuracy: ±' + Math.round(pos.coords.accuracy) + 'm';
+    draw();
+  }
+  function onErr(err){
+    document.getElementById('gpsPill').textContent = 'GPS error: ' + (err.message || err.code);
+  }
+  function startGps(){
+    if (!navigator.geolocation) {
+      document.getElementById('gpsPill').textContent = 'GPS not available on this device';
+      return;
+    }
+    if (watchId != null) navigator.geolocation.clearWatch(watchId);
+    watchId = navigator.geolocation.watchPosition(onPos, onErr, {
+      enableHighAccuracy: true, maximumAge: 2000, timeout: 15000
+    });
+  }
+  document.getElementById('btnGps').addEventListener('click', startGps);
+  document.getElementById('btnCenter').addEventListener('click', function(){
+    if (!me) { startGps(); return; }
+    draw();
+  });
+  // Auto-try GPS (may prompt)
+  startGps();
+
+  // Compass
+  var needle = document.getElementById('needle');
+  function setBearing(deg){
+    needle.style.transform = 'rotate(' + deg + 'deg)';
+    document.getElementById('bearing').textContent = 'Bearing: ' + Math.round(deg) + '°';
+  }
+  document.getElementById('btnCompass').addEventListener('click', function(){
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+      DeviceOrientationEvent.requestPermission().then(function(state){
+        if (state === 'granted') bindCompass();
+        else document.getElementById('bearing').textContent = 'Compass permission denied';
+      }).catch(function(){ document.getElementById('bearing').textContent = 'Compass permission failed'; });
+    } else {
+      bindCompass();
+    }
+  });
+  function bindCompass(){
+    window.addEventListener('deviceorientation', function(e){
+      var heading = e.webkitCompassHeading;
+      if (heading == null && e.alpha != null) heading = 360 - e.alpha;
+      if (heading != null) setBearing(heading);
+    }, true);
+  }
+})();
+</script>
+</body>
+</html>
