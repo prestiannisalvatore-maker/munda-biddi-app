@@ -21,12 +21,16 @@ const PLAY_ZOOM = 14.35;
 const MAX_ZOOM = 18;
 const MIN_ZOOM = 9;
 const DETAIL_ZOOM = 16.5;
-/** Dramatic tilt so steep Stirling faces read in perspective. */
-const DEFAULT_PITCH = 72;
-/** Vertical exaggeration — Stirling relief is ~700 m; 1.5× looks almost flat. */
-const DEFAULT_EXAGGERATION = 3.2;
-const MIN_EXAGGERATION = 1.5;
-const MAX_EXAGGERATION = 5;
+/** Natural tilt — enough to read the ridge without cartoon cliffs. */
+const DEFAULT_PITCH = 58;
+/**
+ * Vertical scale relative to real DEM elevations.
+ * 1.0× = true height (Bluff Knoll ~1099 m, plains ~300–400 m → ~700 m relief).
+ * Keep near 1× so peaks match the real elevation profile.
+ */
+const DEFAULT_EXAGGERATION = 1.0;
+const MIN_EXAGGERATION = 0.5;
+const MAX_EXAGGERATION = 2.0;
 const DEM_SOURCE_ID = "terrain-dem";
 /** Camera follow smoothing (lower = smoother / less snappy). */
 const CENTER_SMOOTH = 0.12;
@@ -319,7 +323,7 @@ export default function Mapbox3DTrail() {
               type: "hillshade",
               source: DEM_SOURCE_ID,
               paint: {
-                "hillshade-exaggeration": 0.75,
+                "hillshade-exaggeration": 0.4,
                 "hillshade-shadow-color": "#0f172a",
                 "hillshade-highlight-color": "#f8fafc",
                 "hillshade-accent-color": "#78716c",
@@ -330,7 +334,7 @@ export default function Mapbox3DTrail() {
             beforeId
           );
         } else {
-          map.setPaintProperty("hillshade", "hillshade-exaggeration", 0.75);
+          map.setPaintProperty("hillshade", "hillshade-exaggeration", 0.4);
         }
         if (!map.getLayer("sky")) {
           map.addLayer({
@@ -460,7 +464,7 @@ export default function Mapbox3DTrail() {
           setTerrainNote(
             useMapboxDem
               ? null
-              : "Using backup elevation data — hills exaggerated so the ridge reads clearly."
+              : "Using backup elevation data — heights at true scale (1×)."
           );
           setLoadStatus("");
         } catch {
@@ -608,10 +612,11 @@ export default function Mapbox3DTrail() {
     if (!map || !loaded || !terrainReady || !map.getSource(DEM_SOURCE_ID)) return;
     map.setTerrain({ source: DEM_SOURCE_ID, exaggeration });
     if (map.getLayer("hillshade")) {
+      // Keep shading gentle so cliffs don’t look taller than the DEM
       map.setPaintProperty(
         "hillshade",
         "hillshade-exaggeration",
-        Math.min(0.95, 0.45 + exaggeration * 0.1)
+        Math.min(0.55, 0.3 + exaggeration * 0.12)
       );
     }
   }, [exaggeration, loaded, terrainReady]);
@@ -853,7 +858,9 @@ export default function Mapbox3DTrail() {
             <div className="text-[10px] text-slate-400">
               {TRAIL_LEN.toLocaleString()} GPS points · Satellite
               {terrainReady
-                ? ` + 3D mountains (${exaggeration.toFixed(1)}×)`
+                ? Math.abs(exaggeration - 1) < 0.05
+                  ? " + 3D terrain (true scale)"
+                  : ` + 3D terrain (${exaggeration.toFixed(1)}× height)`
                 : " · loading terrain…"}
             </div>
           </div>
@@ -961,7 +968,7 @@ export default function Mapbox3DTrail() {
             <span className="text-slate-500">{pitch}°</span>
           </div>
           <div>
-            <label className="text-slate-400 block mb-1">Mountain height</label>
+            <label className="text-slate-400 block mb-1">Elevation scale</label>
             <input
               type="range"
               min={MIN_EXAGGERATION}
@@ -972,7 +979,10 @@ export default function Mapbox3DTrail() {
               disabled={!loaded || !terrainReady}
               className="w-full accent-blue-400"
             />
-            <span className="text-slate-500">{exaggeration.toFixed(1)}× relief</span>
+            <span className="text-slate-500">
+              {exaggeration.toFixed(1)}×
+              {Math.abs(exaggeration - 1) < 0.05 ? " (true)" : ""}
+            </span>
           </div>
           <div>
             <label className="text-slate-400 block mb-1">Play speed</label>
@@ -1085,9 +1095,9 @@ export default function Mapbox3DTrail() {
         </div>
 
         <p className="text-[11px] text-slate-500 text-center">
-          ▶ flies closer along the ridge with exaggerated height so Bluff Knoll and the
-          steep faces read clearly · drag <strong>Mountain height</strong> up to 5× if you
-          want even steeper walls · ＋ － / Detail to zoom
+          Heights default to <strong>true elevation</strong> (Bluff Knoll ~1099&nbsp;m). Drag{" "}
+          <strong>Elevation scale</strong> only if you want a mild boost (up to 2×) · ＋ － /
+          Detail to zoom
         </p>
       </div>
     </div>
