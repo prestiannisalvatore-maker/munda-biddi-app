@@ -1,9 +1,81 @@
 <!DOCTYPE html>
-<html lang="en"><head>
-<meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
-<meta http-equiv="refresh" content="0; url=/field.html"/>
-<title>Offline → Field Mode</title>
-</head><body style="font-family:sans-serif;padding:24px">
-<p>Opening Field Mode…</p>
-<p><a href="/field.html">Tap here if nothing happens</a></p>
-</body></html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#b45309">
+  <title>Offline — Stirling Ridge Walk</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(160deg, #7f1d1d 0%, #b45309 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: #0f172a;
+    }
+    .box {
+      background: #fff;
+      border-radius: 16px;
+      padding: 28px 24px;
+      max-width: 440px;
+      width: 100%;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+    }
+    h1 { font-size: 1.35rem; margin-bottom: 10px; }
+    p { font-size: 0.95rem; color: #334155; line-height: 1.5; margin-bottom: 12px; }
+    .warn {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 0.9rem;
+      color: #7f1d1d;
+      margin-bottom: 14px;
+    }
+    ol { padding-left: 1.2rem; font-size: 0.9rem; color: #78350f; }
+    li { margin: 6px 0; }
+    .links { display: grid; gap: 8px; margin-top: 16px; }
+    a {
+      display: block;
+      text-align: center;
+      padding: 12px;
+      background: #b45309;
+      color: #fff;
+      font-weight: 700;
+      border-radius: 10px;
+      text-decoration: none;
+    }
+    a.secondary { background: #1e293b; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>Cached page not found</h1>
+    <p>
+      You are offline and this screen was not stored on the phone yet.
+      On iPhone, Safari tabs cannot start a website without signal.
+    </p>
+    <div class="warn">
+      <strong>Safety:</strong> Use a dedicated GPS / paper map / compass if this
+      phone app is not fully prepared. Do not continue on phone nav alone.
+    </div>
+    <ol>
+      <li>Get Wi‑Fi or mobile data</li>
+      <li>Open the app in Safari</li>
+      <li>Run <strong>Prepare offline pack</strong> on Home until all badges are green</li>
+      <li>Add to Home Screen, open that icon once online</li>
+      <li>Airplane Mode → open from the Home Screen icon only</li>
+    </ol>
+    <div class="links">
+      <a href="/">Try Home</a>
+      <a class="secondary" href="/map">Try Trail Map</a>
+      <a class="secondary" href="/help">Try Help</a>
+    </div>
+  </div>
+</body>
+</html>
