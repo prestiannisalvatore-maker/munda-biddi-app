@@ -2,8 +2,11 @@
   "name": "Stirling Ridge Walk",
   "short_name": "Stirling Ridge",
   "description": "Complete offline hiking guide for the Stirling Ridge Walk in Western Australia",
-  "start_url": "/",
+  "id": "/go.html",
+  "start_url": "/go.html",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "browser"],
   "background_color": "#f8fafc",
   "theme_color": "#b45309",
   "orientation": "portrait-primary",
@@ -65,9 +68,19 @@
       "description": "View the trail map with GPS"
     },
     {
+      "name": "3D Preview",
+      "url": "/3d",
+      "description": "Fly the ridge in 3D satellite terrain"
+    },
+    {
       "name": "Gear Checklist",
       "url": "/checklist",
       "description": "Check your gear list"
+    },
+    {
+      "name": "Help",
+      "url": "/help",
+      "description": "Map tips, GPX download, and offline setup"
     }
   ]
 }
