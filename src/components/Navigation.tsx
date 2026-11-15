@@ -6,9 +6,11 @@ import { usePathname } from "next/navigation";
 const navItems = [
   { href: "/", label: "Home" },
   { href: "/map", label: "Trail Map" },
+  { href: "/3d", label: "3D Preview" },
   { href: "/info", label: "Trail Info" },
   { href: "/itinerary", label: "Itinerary" },
   { href: "/checklist", label: "Checklist" },
+  { href: "/help", label: "Help" },
 ];
 
 export default function Navigation() {

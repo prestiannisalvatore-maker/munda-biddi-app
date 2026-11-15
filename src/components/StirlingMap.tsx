@@ -9,9 +9,10 @@ import { lineOfPosition, intersectLines } from "@/lib/geo";
 
 delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
-  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+  // Self-hosted so Trail Map markers work with zero network
+  iconRetinaUrl: "/leaflet/marker-icon-2x.png",
+  iconUrl: "/leaflet/marker-icon.png",
+  shadowUrl: "/leaflet/marker-shadow.png",
 });
 
 const userLocationIcon = L.divIcon({
@@ -308,20 +309,43 @@ export default function StirlingMap() {
   useEffect(() => {
     if (!mounted || !mapRef.current) return;
 
+    // Esri World Topo keeps ridge/path detail when zoomed in (OpenTopo often goes blank past ~15 in WA)
     const topoLayer = L.tileLayer(
+      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
+      {
+        attribution: "Tiles &copy; Esri — World Topographic Map",
+        maxZoom: 19,
+        maxNativeZoom: 18,
+      }
+    );
+
+    // Classic contours — useful mid-zoom; blanks out if you push past available tiles
+    const contoursLayer = L.tileLayer(
       "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
       {
         attribution:
-          'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="https://opentopomap.org">OpenTopoMap</a>',
+          'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, <a href="https://opentopomap.org">OpenTopoMap</a>',
         maxZoom: 17,
+        maxNativeZoom: 15,
+      }
+    );
+
+    const streetsLayer = L.tileLayer(
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      {
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 19,
+        maxNativeZoom: 19,
       }
     );
 
     const satelliteLayer = L.tileLayer(
       "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
       {
-        attribution: 'Tiles &copy; Esri',
-        maxZoom: 18,
+        attribution: "Tiles &copy; Esri",
+        maxZoom: 19,
+        maxNativeZoom: 19,
       }
     );
 
@@ -329,14 +353,18 @@ export default function StirlingMap() {
       center: [-34.355, 118.31],
       zoom: 13,
       layers: [topoLayer],
-      minZoom: 12,
-      maxZoom: 17,
+      minZoom: 11,
+      maxZoom: 18,
     });
 
-    L.control.layers({
-      "Topographic": topoLayer,
-      "Satellite": satelliteLayer,
-    }).addTo(map);
+    L.control
+      .layers({
+        Topographic: topoLayer,
+        "Contours (OpenTopo)": contoursLayer,
+        Streets: streetsLayer,
+        Satellite: satelliteLayer,
+      })
+      .addTo(map);
 
     const trailCoords: L.LatLngExpression[] = routeCoordinates.map(
       ([lng, lat]) => [lat, lng] as L.LatLngExpression
