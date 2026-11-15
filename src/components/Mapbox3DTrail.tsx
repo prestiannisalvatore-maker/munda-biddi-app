@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 import { routeCoordinates } from "@/data/routeCoordinates";
 import { peaks, campsites } from "@/data/stirlingRidgeData";
 
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
 const TRAIL_LEN = routeCoordinates.length;
 const LAST_IDX = TRAIL_LEN - 1;
 /** Full trail walk duration at 1× — slow scenic flyover. */
@@ -40,13 +39,13 @@ const CAMERA_UPDATE_MS = 48;
 const SPEED_OPTIONS = [0.5, 1, 2] as const;
 
 /**
- * Esri World Imagery as the basemap — Mapbox satellite tiles are often rate-limited
- * (HTTP 429), which leaves a black WebGL canvas. Esri raster tiles stay visible.
+ * Esri World Imagery + free glyphs — no Mapbox token required.
+ * Elevation uses public AWS Terrarium DEM tiles.
  */
-const SATELLITE_STYLE: mapboxgl.StyleSpecification = {
+const SATELLITE_STYLE: maplibregl.StyleSpecification = {
   version: 8,
   name: "Stirling Satellite",
-  glyphs: "mapbox://fonts/mapbox/{fontstack}/{range}.pbf",
+  glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
   sources: {
     "esri-satellite": {
       type: "raster",
@@ -124,8 +123,8 @@ function indexAtProgress(pct: number): number {
 
 export default function Mapbox3DTrail() {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<mapboxgl.Map | null>(null);
-  const markerRef = useRef<mapboxgl.Marker | null>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
+  const markerRef = useRef<maplibregl.Marker | null>(null);
   const animFrameRef = useRef<number | null>(null);
   const progressRef = useRef(0);
   const pitchRef = useRef(DEFAULT_PITCH);
@@ -250,19 +249,12 @@ export default function Mapbox3DTrail() {
     map.setLayoutProperty("contour-labels", "visibility", visible ? "visible" : "none");
   }, []);
 
-  // Esri satellite first (always visible). Optional Mapbox DEM for 3D — disabled on 429/errors.
+  // Esri satellite + public Terrarium DEM — no Mapbox token required.
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
 
-    if (!MAPBOX_TOKEN) {
-      setError("missing-token");
-      return;
-    }
-
-    mapboxgl.accessToken = MAPBOX_TOKEN;
-
     try {
-      const map = new mapboxgl.Map({
+      const map = new maplibregl.Map({
         container: mapContainer.current,
         style: SATELLITE_STYLE,
         center: [118.31, -34.355],
@@ -277,18 +269,18 @@ export default function Mapbox3DTrail() {
         preserveDrawingBuffer: false,
       });
 
-      map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), "top-right");
-      map.addControl(new mapboxgl.FullscreenControl(), "top-right");
+      map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
+      map.addControl(new maplibregl.FullscreenControl(), "top-right");
       map.addControl(
-        new mapboxgl.ScaleControl({ maxWidth: 120, unit: "metric" }),
+        new maplibregl.ScaleControl({ maxWidth: 120, unit: "metric" }),
         "bottom-left"
       );
 
-      const bounds = new mapboxgl.LngLatBounds();
+      const bounds = new maplibregl.LngLatBounds();
       routeCoordinates.forEach(([lng, lat]) => bounds.extend([lng, lat]));
 
       const removeTerrainLayers = () => {
-        for (const id of ["hillshade", "sky"]) {
+        for (const id of ["hillshade"]) {
           if (map.getLayer(id)) {
             try {
               map.removeLayer(id);
@@ -336,17 +328,6 @@ export default function Mapbox3DTrail() {
         } else {
           map.setPaintProperty("hillshade", "hillshade-exaggeration", 0.4);
         }
-        if (!map.getLayer("sky")) {
-          map.addLayer({
-            id: "sky",
-            type: "sky",
-            paint: {
-              "sky-type": "atmosphere",
-              "sky-atmosphere-sun": [0.0, 55.0],
-              "sky-atmosphere-sun-intensity": 12,
-            },
-          });
-        }
       };
 
       const disableTerrain = (reason: string) => {
@@ -391,14 +372,14 @@ export default function Mapbox3DTrail() {
         const start = routeCoordinates[0];
         const end = routeCoordinates[LAST_IDX];
 
-        new mapboxgl.Marker({ color: "#16a34a" })
+        new maplibregl.Marker({ color: "#16a34a" })
           .setLngLat(start as [number, number])
-          .setPopup(new mapboxgl.Popup().setHTML("<strong>START</strong><br/>Gnowellen Road"))
+          .setPopup(new maplibregl.Popup().setHTML("<strong>START</strong><br/>Gnowellen Road"))
           .addTo(map);
 
-        new mapboxgl.Marker({ color: "#dc2626" })
+        new maplibregl.Marker({ color: "#dc2626" })
           .setLngLat(end as [number, number])
-          .setPopup(new mapboxgl.Popup().setHTML("<strong>FINISH</strong><br/>Bluff Knoll Car Park"))
+          .setPopup(new maplibregl.Popup().setHTML("<strong>FINISH</strong><br/>Bluff Knoll Car Park"))
           .addTo(map);
 
         if (!markerRef.current) {
@@ -406,7 +387,7 @@ export default function Mapbox3DTrail() {
           el.className = "walker-marker";
           el.style.cssText =
             "width:18px;height:18px;background:#3b82f6;border:3px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.4);";
-          markerRef.current = new mapboxgl.Marker(el)
+          markerRef.current = new maplibregl.Marker(el)
             .setLngLat(start as [number, number])
             .addTo(map);
         }
@@ -416,39 +397,17 @@ export default function Mapbox3DTrail() {
         if (terrainFailedRef.current || map.getSource(DEM_SOURCE_ID)) return;
         setLoadStatus("Building 3D mountains…");
 
-        // Prefer Mapbox DEM when the token is healthy; otherwise use public
-        // AWS Terrarium tiles so the ridge stays 3D even after Mapbox 429s.
-        let useMapboxDem = false;
         try {
-          const probe = await fetch(
-            `https://api.mapbox.com/v4/mapbox.mapbox-terrain-dem-v1/10/844/616.webp?access_token=${MAPBOX_TOKEN}`,
-            { method: "GET", cache: "no-store" }
-          );
-          useMapboxDem = probe.ok;
-        } catch {
-          useMapboxDem = false;
-        }
-
-        try {
-          if (useMapboxDem) {
-            map.addSource(DEM_SOURCE_ID, {
-              type: "raster-dem",
-              url: "mapbox://mapbox.mapbox-terrain-dem-v1",
-              tileSize: 512,
-              maxzoom: 14,
-            });
-          } else {
-            map.addSource(DEM_SOURCE_ID, {
-              type: "raster-dem",
-              tiles: [
-                "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
-              ],
-              encoding: "terrarium",
-              tileSize: 256,
-              maxzoom: 15,
-              attribution: "Elevation © Mapzen / AWS Terrain Tiles",
-            });
-          }
+          map.addSource(DEM_SOURCE_ID, {
+            type: "raster-dem",
+            tiles: [
+              "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+            ],
+            encoding: "terrarium",
+            tileSize: 256,
+            maxzoom: 15,
+            attribution: "Elevation © Mapzen / AWS Terrain Tiles",
+          });
 
           applyTerrainLook(exaggerationRef.current);
           setPitch(DEFAULT_PITCH);
@@ -461,11 +420,7 @@ export default function Mapbox3DTrail() {
             essential: true,
           });
           setTerrainReady(true);
-          setTerrainNote(
-            useMapboxDem
-              ? null
-              : "Using backup elevation data — heights at true scale (1×)."
-          );
+          setTerrainNote(null);
           setLoadStatus("");
         } catch {
           disableTerrain("3D terrain unavailable — showing flat satellite.");
@@ -495,14 +450,9 @@ export default function Mapbox3DTrail() {
       });
 
       map.on("error", (e) => {
-        console.error("Mapbox error:", e);
+        console.error("MapLibre error:", e);
         const msg = (e.error?.message || "").toLowerCase();
         const status = (e as { error?: { status?: number } }).error?.status;
-        if (msg.includes("access token") || msg.includes("401")) {
-          setError("invalid-token");
-          return;
-        }
-        // Mapbox DEM 429s can blank the canvas — swap to public Terrarium DEM
         const isTileFail =
           status === 429 ||
           msg.includes("429") ||
@@ -513,23 +463,20 @@ export default function Mapbox3DTrail() {
           msg.includes("ajax");
         if (isTileFail && map.getTerrain()) {
           try {
+            // Re-apply public Terrarium DEM if terrain source glitched
             removeTerrainLayers();
-            if (!map.getSource(DEM_SOURCE_ID)) {
-              map.addSource(DEM_SOURCE_ID, {
-                type: "raster-dem",
-                tiles: [
-                  "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
-                ],
-                encoding: "terrarium",
-                tileSize: 256,
-                maxzoom: 15,
-              });
-            }
+            map.addSource(DEM_SOURCE_ID, {
+              type: "raster-dem",
+              tiles: [
+                "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+              ],
+              encoding: "terrarium",
+              tileSize: 256,
+              maxzoom: 15,
+            });
             applyTerrainLook(exaggerationRef.current);
             setTerrainReady(true);
-            setTerrainNote(
-              "Switched to backup elevation — mountains stay 3D."
-            );
+            setTerrainNote("Reloaded elevation tiles.");
           } catch {
             disableTerrain(
               "3D terrain unavailable — satellite stays on; try again later."
@@ -568,10 +515,10 @@ export default function Mapbox3DTrail() {
         <span style="font-size:16px;">⛰️</span>
         <span style="font-size:9px;font-weight:700;color:white;background:rgba(0,0,0,0.65);padding:1px 4px;border-radius:3px;white-space:nowrap;">${peak.name}</span>
       </div>`;
-      new mapboxgl.Marker({ element: el })
+      new maplibregl.Marker({ element: el })
         .setLngLat([peak.lng, peak.lat])
         .setPopup(
-          new mapboxgl.Popup({ offset: 20 }).setHTML(
+          new maplibregl.Popup({ offset: 20 }).setHTML(
             `<strong>${peak.name}</strong><br/>${peak.elevation}m<br/><em>${peak.description}</em>`
           )
         )
@@ -595,10 +542,10 @@ export default function Mapbox3DTrail() {
         <span style="font-size:16px;">🏕️</span>
         <span style="font-size:9px;font-weight:700;color:#bbf7d0;background:rgba(0,0,0,0.65);padding:1px 4px;border-radius:3px;white-space:nowrap;">${site.name}</span>
       </div>`;
-      new mapboxgl.Marker({ element: el })
+      new maplibregl.Marker({ element: el })
         .setLngLat([site.lng, site.lat])
         .setPopup(
-          new mapboxgl.Popup({ offset: 20 }).setHTML(
+          new maplibregl.Popup({ offset: 20 }).setHTML(
             `<strong>${site.name}</strong><br/>${site.description}`
           )
         )
@@ -639,62 +586,12 @@ export default function Mapbox3DTrail() {
       if (map.getSource("contours")) map.removeSource("contours");
     };
 
-    if (!showContours) {
-      removeContours();
-      return;
-    }
-
-    if (!map.getSource("contours")) {
-      map.addSource("contours", {
-        type: "vector",
-        url: "mapbox://mapbox.mapbox-terrain-v2",
-      });
-    }
-
-    if (!map.getLayer("contour-lines")) {
-      map.addLayer({
-        id: "contour-lines",
-        type: "line",
-        source: "contours",
-        "source-layer": "contour",
-        layout: { "line-join": "round", "line-cap": "round" },
-        paint: {
-          "line-color": "#ffffff",
-          "line-width": [
-            "interpolate",
-            ["linear"],
-            ["get", "ele"],
-            0, 0.25,
-            500, 0.4,
-            1000, 0.9,
-          ],
-          "line-opacity": 0.35,
-        },
-      });
-    }
-
-    if (!map.getLayer("contour-labels")) {
-      map.addLayer({
-        id: "contour-labels",
-        type: "symbol",
-        source: "contours",
-        "source-layer": "contour",
-        filter: ["==", ["%", ["get", "ele"], 100], 0],
-        layout: {
-          "symbol-placement": "line",
-          "text-field": ["concat", ["to-string", ["get", "ele"]], " m"],
-          "text-size": 10,
-          "text-max-angle": 25,
-          "text-allow-overlap": false,
-          visibility: isPlayingRef.current ? "none" : "visible",
-        },
-        paint: {
-          "text-color": "#ffffff",
-          "text-halo-color": "#000000",
-          "text-halo-width": 1,
-          "text-opacity": 0.65,
-        },
-      });
+    // Contour vector tiles previously required a Mapbox token; hillshade covers relief now.
+    removeContours();
+    if (showContours) {
+      setTerrainNote(
+        "Contour lines need a Mapbox token — hillshade shows the relief instead."
+      );
     }
   }, [loaded, showContours]);
 
@@ -803,44 +700,12 @@ export default function Mapbox3DTrail() {
     [applyCamera, stopPlayback, resetCameraSmoothing]
   );
 
-  if (error === "missing-token" || error === "invalid-token") {
+  if (error === "init-failed") {
     return (
       <div className="rounded-xl border-2 border-amber-400 bg-amber-50 p-6">
-        <h3 className="font-bold text-amber-900 text-lg mb-2">🗺️ Mapbox 3D Preview Setup Required</h3>
-        <p className="text-amber-800 text-sm mb-4">
-          To see the trail in 3D satellite imagery with terrain contours, add a free Mapbox access token.
-        </p>
-        <ol className="text-sm text-amber-900 space-y-2 list-decimal pl-5 mb-4">
-          <li>
-            Create a free account at{" "}
-            <a
-              href="https://account.mapbox.com/auth/signup/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline font-semibold"
-            >
-              mapbox.com
-            </a>
-          </li>
-          <li>
-            Copy your default public token from{" "}
-            <a
-              href="https://account.mapbox.com/access-tokens/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline font-semibold"
-            >
-              Access Tokens
-            </a>
-          </li>
-          <li>
-            Add it in Vercel as environment variable:{" "}
-            <code className="bg-amber-100 px-1.5 py-0.5 rounded text-xs">NEXT_PUBLIC_MAPBOX_TOKEN</code>
-          </li>
-          <li>Redeploy — the 3D preview will appear here</li>
-        </ol>
-        <p className="text-xs text-amber-700">
-          Mapbox free tier includes 50,000 map loads/month — plenty for personal use.
+        <h3 className="font-bold text-amber-900 text-lg mb-2">3D preview failed to start</h3>
+        <p className="text-amber-800 text-sm">
+          Check your connection and reload the page. Satellite and elevation tiles need internet.
         </p>
       </div>
     );
@@ -884,15 +749,6 @@ export default function Mapbox3DTrail() {
               className="rounded"
             />
             Camps
-          </label>
-          <label className="flex items-center gap-1.5 text-xs cursor-pointer" title="Optional — can slow loading">
-            <input
-              type="checkbox"
-              checked={showContours}
-              onChange={(e) => setShowContours(e.target.checked)}
-              className="rounded"
-            />
-            Contours
           </label>
         </div>
       </div>
@@ -1082,7 +938,7 @@ export default function Mapbox3DTrail() {
                 const map = mapRef.current;
                 if (!map) return;
                 map.stop();
-                const bounds = new mapboxgl.LngLatBounds();
+                const bounds = new maplibregl.LngLatBounds();
                 routeCoordinates.forEach(([lng, lat]) => bounds.extend([lng, lat]));
                 map.fitBounds(bounds, { padding: 60, pitch: pitchRef.current, duration: 1200 });
               }}
