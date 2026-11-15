@@ -488,7 +488,12 @@ export default function Mapbox3DTrail() {
       mapRef.current = map;
     } catch (err) {
       console.error(err);
-      setError("init-failed");
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(
+        /webgl/i.test(msg)
+          ? "webgl-failed"
+          : "init-failed"
+      );
     }
 
     return () => {
@@ -700,12 +705,14 @@ export default function Mapbox3DTrail() {
     [applyCamera, stopPlayback, resetCameraSmoothing]
   );
 
-  if (error === "init-failed") {
+  if (error === "webgl-failed" || error === "init-failed") {
     return (
       <div className="rounded-xl border-2 border-amber-400 bg-amber-50 p-6">
         <h3 className="font-bold text-amber-900 text-lg mb-2">3D preview failed to start</h3>
         <p className="text-amber-800 text-sm">
-          Check your connection and reload the page. Satellite and elevation tiles need internet.
+          {error === "webgl-failed"
+            ? "This browser could not start WebGL (needed for 3D). Try Safari/Chrome on a phone or laptop, or turn off Low Power Mode / battery saver."
+            : "Check your connection and reload the page. Satellite and elevation tiles need internet."}
         </p>
       </div>
     );
